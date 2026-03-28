@@ -1,26 +1,75 @@
 @import "tailwindcss";
 
 :root {
+  /* Brand primary colors (Colombian flag) */
+  --brand-yellow: #ffb100;
+  --brand-blue: #0060bb;
+  --brand-red: #d00000;
+
+  /* Complementary colors */
+  --brand-teal: #37bbca;
+  --brand-green: #89d819;
+  --brand-orange: #ff7b17;
+
+  /* Grade badge backgrounds */
+  --grade-1-bg: #fff3d0;
+  --grade-2-bg: #d0e8ff;
+  --grade-3-bg: #ffe0e0;
+  --grade-4-bg: #d0f0f5;
+  --grade-5-bg: #d8f5d8;
+
+  /* Grade badge text */
+  --grade-1-text: #b07800;
+  --grade-2-text: #004488;
+  --grade-3-text: #990000;
+  --grade-4-text: #1a7a85;
+  --grade-5-text: #3d7a00;
+
+  /* Neutrals */
+  --text-primary: #222222;
+  --text-secondary: #666666;
+  --text-placeholder: #999999;
+  --border: #eeeeee;
+  --input-bg: #fafafa;
+  --card-bg: #ffffff;
+  --page-bg: #ffffff;
+
+  /* Semantic */
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #222222;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-brand-yellow: var(--brand-yellow);
+  --color-brand-blue: var(--brand-blue);
+  --color-brand-red: var(--brand-red);
+  --color-brand-teal: var(--brand-teal);
+  --color-brand-green: var(--brand-green);
+  --color-brand-orange: var(--brand-orange);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-placeholder: var(--text-placeholder);
+  --color-border: var(--border);
+  --color-input-bg: var(--input-bg);
+  --color-card-bg: var(--card-bg);
+  --font-sans: var(--font-montserrat);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
+
+/* Flag bar component */
+.flag-bar {
+  display: flex;
+  height: 4px;
+  width: 100%;
+}
+.flag-bar-yellow { flex: 2; background: var(--brand-yellow); }
+.flag-bar-blue { flex: 1; background: var(--brand-blue); }
+.flag-bar-red { flex: 1; background: var(--brand-red); }
