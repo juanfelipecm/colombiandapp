@@ -1,0 +1,344 @@
+{
+  "dbas": [
+    {
+      "grado": 0,
+      "numero": 1,
+      "enunciado": "Toma decisiones frente a algunas situaciones cotidianas.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Explica las razones por las que hace una elección."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Muestra iniciativa en la realización de actividades."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Demuestra constancia al realizar sus actividades."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Anticipa algunas consecuencias de las decisiones que toma."
+        }
+      ]
+    },
+    {
+      "grado": 0,
+      "numero": 2,
+      "enunciado": "Se apropia de hábitos y prácticas para el cuidado personal y de su entorno.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Muestra independencia en la realización de prácticas de higiene y alimentación saludables."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Identifica algunas situaciones que ponen en riesgo su salud y seguridad."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Contribuye a mantener el aseo y organización de los espacios físicos que utiliza."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Practica acciones individuales y colectivas que ayudan a prevenir problemas ambientales y a conservar su entorno."
+        }
+      ]
+    },
+    {
+      "grado": 0,
+      "numero": 3,
+      "enunciado": "Identifica y valora las características corporales y emocionales en sí mismo y en los demás.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Menciona algunas similitudes y diferencias que encuentra entre él y sus compañeros."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Representa su cuerpo a través de diferentes lenguajes artísticos (dibujo, danza, escultura, rondas, entre otros)."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Manifiesta sus gustos y disgustos frente a diferentes situaciones y reconoce paulatinamente sus emociones."
+        }
+      ]
+    },
+    {
+      "grado": 0,
+      "numero": 4,
+      "enunciado": "Reconoce que es parte de una familia, de una comunidad y un territorio con costumbres, valores y tradiciones.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Identifica características del lugar donde vive."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Reconoce que todas las personas tienen valores y cada una es importante."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Describe roles de personas de su familia y entorno cercano."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Reconoce que tiene unos derechos y los vive en la interacción con otros."
+        }
+      ]
+    },
+    {
+      "grado": 0,
+      "numero": 5,
+      "enunciado": "Participa en la construcción colectiva de acuerdos, objetivos y proyectos comunes.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Propone su punto de vista en espacios de construcción colectiva."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Reconoce que los demás pueden tener un punto de vista diferente al suyo y los escucha."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Acepta sus equivocaciones y busca reestablecer las relaciones cuando por alguna razón incumple sus acuerdos."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Muestra respeto por los acuerdos de convivencia que se construyen en su familia, con sus pares y otros miembros de su comunidad."
+        }
+      ]
+    },
+    {
+      "grado": 0,
+      "numero": 6,
+      "enunciado": "Demuestra consideración y respeto al relacionarse con otros.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Comprende que una misma situación puede generar reacciones diferentes en las personas."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Asume actitudes colaborativas y solidarias en las actividades en las que participa."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Reconoce que existen diversos seres vivos a los cuales conoce y cuida."
+        }
+      ]
+    },
+    {
+      "grado": 0,
+      "numero": 7,
+      "enunciado": "Expresa y representa lo que observa, siente, piensa e imagina, a través del juego, la música, el dibujo y la expresión corporal.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Participa en canciones, rondas y juegos tradicionales haciendo aportes personales de manera espontánea."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Dramatiza diálogos con sus juguetes y otros elementos del ambiente con los que dibuja, arma o construye muñecos."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Representa y simboliza diferentes roles y actividades al usar los objetos que encuentra a su alrededor."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Expresa libremente sus pensamientos y emociones a través de dibujos, pinturas, figuras modeladas o fotografías."
+        }
+      ]
+    },
+    {
+      "grado": 0,
+      "numero": 8,
+      "enunciado": "Identifica las relaciones sonoras en el lenguaje oral.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Identifica palabras que riman en juegos con la música, las rondas, la poesía, juegos corporales, entre otros."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Sigue y construye juegos de segmentación de palabras orales a través de las palmas, el zapateo, y otras estrategias."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Establece asociaciones entre los sonidos onomatopéyicos del entorno y los objetos que simbolizan."
+        }
+      ]
+    },
+    {
+      "grado": 0,
+      "numero": 9,
+      "enunciado": "Establece relaciones e interpreta imágenes, letras, objetos, personajes que encuentra en distintos tipos de textos.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Lee imágenes, hace preguntas, formula ideas y crea historias a propósito de lo que percibe en diferentes registros (textos escritos, pinturas, aplicaciones, páginas web, entre otros)."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Identifica letras que le son cotidianas y las asocia en diferentes tipos de textos (pancartas, avisos publicitarios, libros álbum, revistas, entre otros)."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Explora diferentes tipos de texto y reconoce su propósito (recetarios, libro álbum, cuento, diccionarios ilustrados, enciclopedias infantiles, cancioneros, entre otros)."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Establece relaciones sobre lo que le leen y situaciones de su vida cotidiana u otros temas de su interés."
+        }
+      ]
+    },
+    {
+      "grado": 0,
+      "numero": 10,
+      "enunciado": "Expresa ideas, intereses y emociones a través de sus propias grafías y formas semejantes a las letras convencionales en formatos con diferentes intenciones comunicativas.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Se interesa por saber cómo se escriben las palabras que escucha."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Identifica y asocia los sonidos de las letras que escucha en las lecturas y los vincula con sus propias grafías o pseudoletras para escribir lo que quiere o necesita expresar (una historia, una invitación, una carta, una receta, etc)."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Escribe su nombre propio con las letras que conoce."
+        }
+      ]
+    },
+    {
+      "grado": 0,
+      "numero": 11,
+      "enunciado": "Crea situaciones y propone alternativas de solución a problemas cotidianos a partir de sus conocimientos e imaginación.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Crea ambientes haciendo uso de objetos, materiales y espacios."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Muestra atención y concentración en las actividades que desarrolla."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Participa en el desarrollo de actividades en espacios libres y naturales."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Coopera con otros haciendo uso de su imaginación para identificar soluciones alternativas a los desafíos que crea o se le plantean."
+        }
+      ]
+    },
+    {
+      "grado": 0,
+      "numero": 12,
+      "enunciado": "Establece relaciones entre las causas y consecuencias de los acontecimientos que le suceden a él o a su alrededor.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Observa y hace registros gráficos, sonoros o audiovisuales para explicar lo que sucede."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Realiza preguntas de temas que son de su interés."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Formula explicaciones para aquello que sucede a su alrededor."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Resuelve situaciones cotidianas usando sus saberes, experiencias y habilidades."
+        }
+      ]
+    },
+    {
+      "grado": 0,
+      "numero": 13,
+      "enunciado": "Usa diferentes herramientas y objetos con variadas posibilidades.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Arma, desarma y transforma objetos de su entorno para descubrir, comprender su funcionamiento y darle otros usos según sus intereses o necesidades."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Participa en juegos de transformaciones y construcción de juguetes con materiales cotidianos y bloques de construcción."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Identifica características de las cosas que encuentra a su alrededor y se pegunta sobre cómo funcionan."
+        }
+      ]
+    },
+    {
+      "grado": 0,
+      "numero": 14,
+      "enunciado": "Construye nociones de espacio, tiempo y medida a través de experiencias cotidianas.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Mide objetos utilizando patrones de medida no convencionales (número de pasos que hay entre un lugar y otro, la palma de la mano, lanas, cordones, recipientes, entre otros)."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Reconoce el antes, el ahora y el después de un evento."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Sitúa acontecimientos relevantes en el tiempo."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Reconoce y establece relaciones espaciales a partir de su cuerpo y objetos (izquierda-derecha, arriba-abajo, delante-detrás, cerca-lejos, dentro- fuera) al participar en actividades grupales como juegos, danzas y rondas."
+        }
+      ]
+    },
+    {
+      "grado": 0,
+      "numero": 15,
+      "enunciado": "Compara, ordena, clasifica objetos e identifica patrones de acuerdo con diferentes criterios.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Identifica el patrón que conforma una secuencia (pollo-gato-pollo) y puede continuarla (pollo-gato-pollo-gato)."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Crea series de acuerdo a un atributo (del más largo al más corto, del más pesado al más liviano, etc)."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Clasifica colecciones de objetos de acuerdo a sus atributos (por la funcionalidad, por el sabor, por la tonalidad, por el peso, entre otras)."
+        }
+      ]
+    },
+    {
+      "grado": 0,
+      "numero": 16,
+      "enunciado": "Determina la cantidad de objetos que conforman una colección, al establecer relaciones de correspondencia y acciones de juntar y separar.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Determina cuántos objetos conforman una colección a partir de: la percepción global, la enumeración y la correspondencia uno a uno."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Compara colecciones de objetos y determina: ¿cuántos hay?, ¿en dónde hay más?, ¿en dónde hay menos?, ¿cuántos hacen falta para tener la misma cantidad?, ¿cuántos le sobran?, entre otras."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Comprende situaciones que implican agregar y quitar, y propone procedimientos basados en la manipulación de objetos concretos o representaciones gráficas."
+        }
+      ]
+    }
+  ]
+}

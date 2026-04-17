@@ -1,0 +1,154 @@
+{
+  "dbas": [
+    {
+      "grado": 0,
+      "numero": 1,
+      "enunciado": "Reconoce instrucciones sencillas relacionadas con su entorno inmediato, y responde a ellas de manera no verbal; como en el siguiente ejemplo:",
+      "evidencias": []
+    },
+    {
+      "grado": 0,
+      "numero": 2,
+      "enunciado": "Asocia imágenes con sonidos de palabras relacionadas con su casa y salón de clases; tal como se muestra en el siguiente ejemplo:",
+      "evidencias": []
+    },
+    {
+      "grado": 0,
+      "numero": 3,
+      "enunciado": "Identifica, repite y utiliza palabras asociadas con su entorno inmediato (casa y salón de clase).",
+      "evidencias": []
+    },
+    {
+      "grado": 0,
+      "numero": 4,
+      "enunciado": "Comprende y responde preguntas muy sencillas sobre sus datos personales, tales como su nombre, edad y su familia; como muestra el siguiente ejemplo:",
+      "evidencias": []
+    },
+    {
+      "grado": 1,
+      "numero": 1,
+      "enunciado": "Comprende y responde a instrucciones sobre tareas escolares básicas, de manera verbal y no verbal. Por ejemplo:",
+      "evidencias": []
+    },
+    {
+      "grado": 1,
+      "numero": 2,
+      "enunciado": "Comprende y realiza declaraciones sencillas, usando expresiones ensayadas, sobre su entorno inmediato (casa y escuela); como se muestra en el siguiente ejemplo:",
+      "evidencias": []
+    },
+    {
+      "grado": 1,
+      "numero": 3,
+      "enunciado": "Organiza la secuencia de eventos principales en una historia corta y sencilla, sobre temas familiares, usando imágenes, después de haberla leído o escuchado. Por ejemplo:",
+      "evidencias": []
+    },
+    {
+      "grado": 1,
+      "numero": 4,
+      "enunciado": "Responde preguntas sencillas sobre información personal básica, como su nombre, edad, familia y compañeros de clase; como en el siguiente ejemplo:",
+      "evidencias": []
+    },
+    {
+      "grado": 1,
+      "numero": 5,
+      "enunciado": "Menciona algunas cualidades físicas propias y de las personas que le rodean a través de palabras y frases previamente estudiadas. Por ejemplo:",
+      "evidencias": []
+    },
+    {
+      "grado": 2,
+      "numero": 1,
+      "enunciado": "Expresa ideas sencillas sobre temas estudiados, usando palabras y frases; así como se muestra en el siguiente ejemplo:",
+      "evidencias": []
+    },
+    {
+      "grado": 2,
+      "numero": 2,
+      "enunciado": "Comprende la secuencia de una historia corta y sencilla sobre temas familiares, y la cuenta nuevamente a partir de ilustraciones y palabras conocidas.",
+      "evidencias": []
+    },
+    {
+      "grado": 2,
+      "numero": 3,
+      "enunciado": "Intercambia información personal como su nombre, edad y procedencia con compañeros y profesores, usando frases sencillas, siguiendo modelos provistos por el docente.",
+      "evidencias": []
+    },
+    {
+      "grado": 2,
+      "numero": 4,
+      "enunciado": "Menciona aspectos culturales propios de su entorno, usando vocabulario y expresiones conocidas.",
+      "evidencias": []
+    },
+    {
+      "grado": 3,
+      "numero": 1,
+      "enunciado": "Comprende y describe algunos detalles en textos cortos y sencillos sobre temas familiares, a partir de imágenes y frases conocidas. Por ejemplo, puede comprender textos como:",
+      "evidencias": []
+    },
+    {
+      "grado": 3,
+      "numero": 2,
+      "enunciado": "Responde, de manera oral o escrita, preguntas sencillas sobre textos descriptivos cortos y alusivos a temas conocidos y de clase. Por ejemplo:",
+      "evidencias": []
+    },
+    {
+      "grado": 3,
+      "numero": 3,
+      "enunciado": "Intercambia ideas y opiniones sencillas con compañeros y profesores, siguiendo modelos o a través de imágenes.",
+      "evidencias": []
+    },
+    {
+      "grado": 3,
+      "numero": 4,
+      "enunciado": "Describe, de manera oral y escrita, objetos, lugares, personas y comunidades, usando oraciones simples. Puede, por ejemplo, hablar o escribir sobre su barrio y lo que allí encuentra, como en el texto siguiente:",
+      "evidencias": []
+    },
+    {
+      "grado": 4,
+      "numero": 1,
+      "enunciado": "Comprende la idea general y algunos detalles en un texto informativo corto y sencillo sobre temas conocidos y de interés.",
+      "evidencias": []
+    },
+    {
+      "grado": 4,
+      "numero": 2,
+      "enunciado": "Pregunta y responde, de forma oral o escrita, interrogantes relacionados con el “quién, cuándo y dónde”, después de leer o escuchar un texto corto y sencillo siempre que el tema le sea conocido; como se muestra en el siguiente ejemplo:",
+      "evidencias": []
+    },
+    {
+      "grado": 4,
+      "numero": 3,
+      "enunciado": "Intercambia opiniones sencillas sobre un tema de interés, a través de oraciones simples y conocidas.",
+      "evidencias": []
+    },
+    {
+      "grado": 4,
+      "numero": 4,
+      "enunciado": "Compara características básicas de personas, objetos y lugares de su escuela y comunidad, a través de oraciones simples. Por ejemplo:",
+      "evidencias": []
+    },
+    {
+      "grado": 5,
+      "numero": 1,
+      "enunciado": "Comprende información general y específica en un texto narrativo corto sobre temas conocidos y de interés. Puede, por ejemplo, comprender un texto como el siguiente:",
+      "evidencias": []
+    },
+    {
+      "grado": 5,
+      "numero": 2,
+      "enunciado": "Produce un texto narrativo oral y/o escrito, corto y sencillo, que responde al “¿qué?, ¿quién?, ¿cuándo? y ¿dónde?” de un evento o anécdota. Por ejemplo, puede producir un texto similar al siguiente, en el que evoque anécdotas o historias tradicionales de su región:",
+      "evidencias": []
+    },
+    {
+      "grado": 5,
+      "numero": 3,
+      "enunciado": "Intercambia información sobre hábitos, gustos y preferencias acerca de temas conocidos, siguiendo modelos provistos por el profesor.",
+      "evidencias": []
+    },
+    {
+      "grado": 5,
+      "numero": 4,
+      "enunciado": "Explica causas y consecuencias de una situación a través de oraciones simples de manera oral y escrita siguiendo un modelo establecido.",
+      "evidencias": []
+    }
+  ]
+}

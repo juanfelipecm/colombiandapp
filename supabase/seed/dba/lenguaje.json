@@ -1,0 +1,1952 @@
+{
+  "dbas": [
+    {
+      "grado": 1,
+      "numero": 1,
+      "enunciado": "Identifica los diferentes medios de comunicación como una posibilidad para informarse, participar y acceder al universo cultural que lo rodea.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Establece semejanzas y diferencias entre los principales medios de comunicación de su contexto: radio, periódicos, televisión, revistas, vallas publicitarias, afiches e internet."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Comprende los mensajes emitidos por diferentes medios de comunicación."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Distingue los medios de comunicación para reconocer los posibles usos que tienen en su entorno."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Describe los diferentes tipos de voz que se usan en los programas radiales y televisivos para dar una noticia, narrar un partido de fútbol o leer un texto escrito."
+        }
+      ]
+    },
+    {
+      "grado": 1,
+      "numero": 2,
+      "enunciado": "Relaciona códigos no verbales, como los movimientos corporales y los gestos de las manos o del rostro, con el significado que pueden tomar de acuerdo con el contexto.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Identifica las intenciones de los gestos y los movimientos corporales de los interlocutores para dar cuenta de lo que quieren comunicar."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Interpreta ilustraciones e imágenes en relación a sus colores, formas y tamaños."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Representa objetos, personas y lugares mediante imágenes."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Reconoce el sentido de algunas cualidades sonoras como la entonación, las pausas y los silencios."
+        }
+      ]
+    },
+    {
+      "grado": 1,
+      "numero": 3,
+      "enunciado": "Reconoce en los textos literarios la posibilidad de desarrollar su capacidad creativa y lúdica.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Escucha o lee adivinanzas, anagramas, retahílas, pregones y acrósticos que hacen parte de su entorno cultural."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Comprende el sentido de los textos de la tradición oral como canciones y cuentos con los que interactúa."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Entiende que hay diferencias en la forma en que se escriben algunos textos como los acrósticos y adivinanzas."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Interactúa con sus compañeros en dinámicas grupales que incluyen: declamación, canto, música y recitales, teniendo en cuenta los sonidos y juegos de palabras."
+        }
+      ]
+    },
+    {
+      "grado": 1,
+      "numero": 4,
+      "enunciado": "Interpreta textos literarios como parte de su iniciación en la comprensión de textos.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Comparte sus impresiones sobre los textos literarios y las relaciona con situaciones que se dan en los contextos donde vive."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Emplea las imágenes o ilustraciones de los textos literarios para comprenderlos."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Expresa sus opiniones e impresiones a través de dibujos, caricaturas, canciones, y los comparte con sus compañeros."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Identifica la repetición de algunos sonidos al final de los versos en textos de la tradición oral y los vincula con su respectiva escritura."
+        }
+      ]
+    },
+    {
+      "grado": 1,
+      "numero": 5,
+      "enunciado": "Reconoce las temáticas presentes en los mensajes que escucha, a partir de la diferenciación de los sonidos que componen las palabras.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Extrae información del contexto comunicativo que le permite identificar quién lo produce y en dónde."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Comprende las temáticas tratadas en diferentes textos que escucha."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Segmenta los discursos que escucha en unidades significativas como las palabras."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Identifica los sonidos presentes en las palabras, oraciones y discursos que escucha para comprender el sentido de lo que oye."
+        }
+      ]
+    },
+    {
+      "grado": 1,
+      "numero": 6,
+      "enunciado": "Interpreta diversos textos a partir de la lectura de palabras sencillas y de las imágenes que contienen.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Comprende el propósito de los textos que lee, apoyándose en sus títulos, imágenes e ilustraciones."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Explica las semejanzas y diferencias que encuentra entre lo que dice un texto y lo que muestran las imágenes o ilustraciones que lo acompañan."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Lee palabras sencillas."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Identifica la letra o grupo de letras que corresponden con un sonido al momento de pronunciar las palabras escritas."
+        }
+      ]
+    },
+    {
+      "grado": 1,
+      "numero": 7,
+      "enunciado": "Enuncia textos orales de diferente índole sobre temas de su interés o sugeridos por otros.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Emplea palabras adecuadas según la situación comunicativa en sus conversaciones y diálogos."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Expresa sus ideas con claridad, teniendo en cuenta el orden de las palabras en los textos orales que produce."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Practica las palabras que representan dificultades en su pronunciación y se autocorrige cuando las articula erróneamente en sus discursos."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Adecúa el volumen de la voz teniendo en cuenta a su interlocutor y si el espacio en el que se encuentra es abierto o cerrado."
+        }
+      ]
+    },
+    {
+      "grado": 1,
+      "numero": 8,
+      "enunciado": "Escribe palabras que le permiten comunicar sus ideas, preferencias y aprendizajes.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Construye textos cortos para relatar, comunicar ideas o sugerencias y hacer peticiones al interior del contexto en el que interactúa."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Expresa sus ideas en torno a una sola temática a partir del vocabulario que conoce."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Elabora listas de palabras parecidas y reconoce las diferencias que guardan entre sí (luna, lupa, lucha; casa, caza, taza; pelo, peso, perro)."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Escribe palabras sencillas."
+        },
+        {
+          "numero": 5,
+          "descripcion": "Relaciona los sonidos de la lengua con sus diferentes grafemas."
+        }
+      ]
+    },
+    {
+      "grado": 2,
+      "numero": 1,
+      "enunciado": "Identifica las características de los medios de comunicación masiva a los que tiene acceso.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Utiliza los medios de comunicación masiva para informarse y manifestar sus puntos de vista."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Identifica las diferencias y semejanzas entre los contenidos provenientes de los diversos medios de comunicación masiva con los que interactúa: radio, televisión, prensa."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Contrasta las características de diferentes medios de comunicación masiva a partir de la manera como presentan la información."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Expresa con claridad contenidos propios de los medios de comunicación masiva."
+        }
+      ]
+    },
+    {
+      "grado": 2,
+      "numero": 2,
+      "enunciado": "Identifica la función que cumplen las señales y símbolos que aparecen en su entorno.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Utiliza las señales que circulan en su entorno para informar, prevenir, prohibir, instruir y obligar."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Asocia los dibujos de las señales y símbolos con sus posibles significados."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Identifica la función de las imágenes en textos como: manuales de instrucción, carteles y etiquetas de productos."
+        }
+      ]
+    },
+    {
+      "grado": 2,
+      "numero": 3,
+      "enunciado": "Identifica algunos elementos constitutivos de textos literarios como personajes, espacios y acciones.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Establece semejanzas y diferencias entre los textos literarios que lee."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Relaciona los personajes, tiempos, espacios y acciones para dar sentido a la historia narrada."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Reconoce las principales partes de un texto literario."
+        }
+      ]
+    },
+    {
+      "grado": 2,
+      "numero": 4,
+      "enunciado": "Comprende diversos textos literarios a partir de sus propias vivencias.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Reconstruye las acciones y los espacios donde se desarrolla la narración y atribuye nuevos perfiles a los personajes."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Elabora hipótesis predictivas del contenido de textos literarios."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Reconoce el orden lógico de los eventos en una narración."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Lee en voz alta textos literarios teniendo en cuenta el ritmo, las pausas y la velocidad."
+        }
+      ]
+    },
+    {
+      "grado": 2,
+      "numero": 5,
+      "enunciado": "Identifica las palabras relevantes de un mensaje y las agrupa en unidades significativas: sonidos en palabras y palabras en oraciones.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Reconoce el propósito comunicativo de su interlocutor de acuerdo con las palabras que emplea en sus mensajes."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Comprende el contenido global de un mensaje."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Comprende que el cambio de un sonido vocálico o consonántico en una palabra modifica su significado."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Distingue los sonidos articulados de la lengua de los sonidos ambientales."
+        }
+      ]
+    },
+    {
+      "grado": 2,
+      "numero": 6,
+      "enunciado": "Predice y analiza los contenidos y estructuras de diversos tipos de texto, a partir de sus conocimientos previos.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Relaciona la información que proporciona el texto con sus conocimientos previos."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Lee con suficiente fluidez para comprender un escrito."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Comprende el tema global de los textos que lee, y responde preguntas sobre lo que en ellos aparece y no aparece escrito."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Ordena las secuencias presentadas en el texto."
+        },
+        {
+          "numero": 5,
+          "descripcion": "Identifica las sílabas que componen una palabra y da cuenta del lugar donde se ubica el acento."
+        }
+      ]
+    },
+    {
+      "grado": 2,
+      "numero": 7,
+      "enunciado": "Expresa sus ideas atendiendo a las características del contexto comunicativo en que las enuncia (interlocutores, temas, lugares).",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Participa dentro los espacios de conversación que hay en su entorno."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Respeta los turnos de uso de la palabra y las ideas expresadas por los interlocutores."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Selecciona palabras que tienen sentido y relación con las ideas que quiere expresar en los diálogos."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Incluye en su discurso palabras que contienen las letras 'r', 'rr' y 'q' con una pronunciación que permite a otros comprenderlas."
+        },
+        {
+          "numero": 5,
+          "descripcion": "Emplea distintos ritmos de voz para dar expresividad a sus ideas"
+        }
+      ]
+    },
+    {
+      "grado": 2,
+      "numero": 8,
+      "enunciado": "Produce diferentes tipos de textos para atender a un propósito comunicativo particular.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Selecciona el tipo de texto que quiere escribir de acuerdo con lo que pretende comunicar."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Elige palabras adecuadas a una temática y a la redacción de tipos de escrito específicos como autorretratos, invitaciones, cartas, entre otros."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Escribe oraciones en las que emplea palabras sencillas y palabras con estructuras silábicas complejas."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Organiza grupos de palabras atendiendo a diversos criterios de carácter sonoro."
+        },
+        {
+          "numero": 5,
+          "descripcion": "Escribe las letras 'b', 'v', 'm', 'n', 'ñ', 'r', y 'rr' según las reglas ortográficas."
+        },
+        {
+          "numero": 6,
+          "descripcion": "Realiza descomposición silábica de palabras mediante los golpes de voz."
+        }
+      ]
+    },
+    {
+      "grado": 3,
+      "numero": 1,
+      "enunciado": "Comprende las funciones que cumplen los medios de comunicación propios de su contexto.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Reconoce los usos de los medios de comunicación con los que se relaciona como periódicos, revistas, noticieros, vallas publicitarias, afiches e internet."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Compara la información proveniente de diferentes medios de comunicación."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Diferencia los formatos en los que se presentan los medios de comunicación a los que tiene acceso."
+        }
+      ]
+    },
+    {
+      "grado": 3,
+      "numero": 2,
+      "enunciado": "Comprende que algunos escritos y manifestaciones artísticas pueden estar compuestos por texto, sonido e imágenes.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Identifica diversas manifestaciones artísticas como la escultura, la pintura y la danza, y relaciona su contenido con el contexto en el que vive."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Interpreta la información difundida en textos no verbales: caricaturas, tiras cómicas, historietas, anuncios publicitarios y otros medios de expresión gráfica."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Comprende que algunos escritos están compuestos por texto y gráficos, esquemas o imágenes."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Analiza los sonidos que se emplean en diferentes manifestaciones artísticas."
+        }
+      ]
+    },
+    {
+      "grado": 3,
+      "numero": 3,
+      "enunciado": "Reconoce algunas características de los textos narrativos, tales como el concepto de narrador y estructura narrativa, a partir de la recreación y disfrute de los mismos.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Diferencia entre textos ficcionales y no ficcionales."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Verifica las hipótesis que plantea acerca del contenido de los textos que lee."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Afianza su capacidad de contar historias mediante la creación de textos literarios narrativos."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Identifica la voz que narra una historia."
+        },
+        {
+          "numero": 5,
+          "descripcion": "Comparte con sus compañeros los textos con los que interactúa en clase para ello, retoma elementos como la entonación, la gesticulación y el manejo escénico."
+        }
+      ]
+    },
+    {
+      "grado": 3,
+      "numero": 4,
+      "enunciado": "Escribe textos literarios coherentes, atendiendo a las características textuales e integrando sus saberes e intereses.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Comprende las características de un texto, cuyo propósito es narrar un hecho o expresar ideas, sentimientos o emociones."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Establece en los textos literarios una relación de correspondencia entre los personajes, las acciones que realizan y los contextos en que se encuentran."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Crea personajes para sus historias y describe cómo son, dónde viven, qué problemas deben enfrentar y cómo los solucionan."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Construye planes textuales para sus escribir textos literarios."
+        },
+        {
+          "numero": 5,
+          "descripcion": "Lee en voz alta los textos que escribe, atendiendo a los cambios de entonación de acuerdo con lo comunicado por los personajes."
+        }
+      ]
+    },
+    {
+      "grado": 3,
+      "numero": 5,
+      "enunciado": "Identifica el papel del emisor y el receptor y sus propósitos comunicativos en una situación específica.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Asocia la intención comunicativa con el contexto en el que se producen los enunciados y el rol que desempeñan los interlocutores."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Infiere el significado de palabras desconocidas, según el contexto donde se encuentren."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Organiza secuencialmente las ideas que comprende de un texto oral."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Deduce información de un emisor (como la edad, el sexo o la actitud) a partir de las características de su voz."
+        }
+      ]
+    },
+    {
+      "grado": 3,
+      "numero": 6,
+      "enunciado": "Interpreta el contenido y la estructura del texto, respondiendo preguntas de orden inferencial y crítico.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Ubica el contenido de un texto en relación con la situación comunicativa en que se presenta."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Utiliza el contexto para inferir información."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Discrimina los temas principales de un texto de los menos relevantes."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Reconoce las diferencias en las estructuras de diferentes tipos de escrito."
+        }
+      ]
+    },
+    {
+      "grado": 3,
+      "numero": 7,
+      "enunciado": "Produce textos orales breves de diferente tipo ajustando el volumen, el tono de la voz, los movimientos corporales y los gestos, al tema y a la situación comunicativa.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Participa en comunicaciones orales atendiendo a diferentes propósitos comunicativos: narrar, argumentar, exponer, describir e informar."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Elige las expresiones más pertinentes para dar claridad a sus intervenciones."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Reconoce los roles de quien produce y de quien interpreta un texto en una situación comunicativa específica."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Realiza cambios en la modulación de la voz para acompañar el sentido de lo que comunica. Elabora juegos de palabras atendiendo a la pronunciación de la sílaba inicial o final de las palabras."
+        }
+      ]
+    },
+    {
+      "grado": 3,
+      "numero": 8,
+      "enunciado": "Produce textos verbales y no verbales en los que tiene en cuenta aspectos gramaticales y ortográficos.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Escribe diversos tipos de texto (como cartas, afiches, pancartas, plegables, cuentos, entre otros) para expresar sus opiniones frente a una problemática de su entorno local."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Selecciona las palabras o expresiones más indicadas para escribir sus textos, teniendo en cuenta a quién van dirigidos y el tema a desarrollar."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Diseña un plan para comunicarse con otros teniendo en cuenta aspectos como la concordancia verbal y la ortografía."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Segmenta palabras escritas que contienen hiatos, diptongos y triptongos, apoyándose en los golpes de voz."
+        },
+        {
+          "numero": 5,
+          "descripcion": "Reconoce que algunos sonidos se corresponden con diferentes grafemas (C, S, Z o K, Q) y lo tiene en cuenta dentro de sus elaboraciones escritas."
+        }
+      ]
+    },
+    {
+      "grado": 4,
+      "numero": 1,
+      "enunciado": "Analiza la información presentada por los diferentes medios de comunicación con los cuales interactúa.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Compara la información presentada por diversos medios de comunicación (como la radio y la televisión) sobre una misma noticia."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Reconoce las relaciones de contenido de diferentes textos informativos en torno a qué ocurrió, a quiénes, cuándo y en dónde."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Identifica las diferentes estructuras por medio de las que los medios de comunicación masiva presentan información."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Dialoga sobre el contenido de los textos informativos con claridad y fluidez en la pronunciación."
+        }
+      ]
+    },
+    {
+      "grado": 4,
+      "numero": 2,
+      "enunciado": "Escribe textos a partir de información dispuesta en imágenes, fotografías, manifestaciones artísticas o conversaciones cotidianas.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Emplea elementos no verbales en los textos que escribe para enfatizar en una intención comunicativa específica."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Comprende el sentido de las manifestaciones no verbales presentes en canciones, afiches y conversaciones."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Complementa sus escritos por medio de secuencias de imágenes o dibujos."
+        }
+      ]
+    },
+    {
+      "grado": 4,
+      "numero": 3,
+      "enunciado": "Crea textos literarios en los que articula lecturas previas e impresiones sobre un tema o situación.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Identifica el contexto en que se crea una obra literaria y lo relaciona con los conocimientos que tiene sobre él."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Reconoce los temas que aborda un texto literario y sus vínculos con la vida cotidiana y escolar."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Emplea figuras literarias en la producción de textos literarios."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Produce textos literarios atendiendo a un género específico."
+        },
+        {
+          "numero": 5,
+          "descripcion": "Participa en espacios discursivos orales en los que socializa con otros los textos que crea, e incorpora efectos sonoros para acompañar la narración."
+        }
+      ]
+    },
+    {
+      "grado": 4,
+      "numero": 4,
+      "enunciado": "Construye textos poéticos, empleando algunas figuras literarias.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Observa la realidad como punto de partida para la creación de textos poéticos."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Reconstruye el sentido de los poemas a partir de la identificación de sus figuras literarias."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Escribe poemas usando figuras literarias como la metáfora, el símil y la personificación."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Declama poemas teniendo en cuenta la pronunciación y entonación necesaria para expresar emociones."
+        }
+      ]
+    },
+    {
+      "grado": 4,
+      "numero": 5,
+      "enunciado": "Interpreta el tono del discurso de su interlocutor, a partir de las características de la voz, del ritmo, de las pausas y de la entonación.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Comprende los temas tratados en espacios de discusión y los incorpora en su discurso para apoyarlos o criticarlos."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Establece intercambios en discursos orales a partir de lecturas previas, discusiones con sus compañeros y sus experiencias de formación escolar."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Identifica las palabras que ordenan un discurso y enmarcan la introducción, el desarrollo y el cierre."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Nota el tono y el estado de ánimo del emisor a partir del ritmo, las pausas y la velocidad de su discurso."
+        }
+      ]
+    },
+    {
+      "grado": 4,
+      "numero": 6,
+      "enunciado": "Organiza la información que encuentra en los textos que lee, utilizando técnicas para el procesamiento de la información que le facilitan el proceso de compresión e interpretación textual.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Comprende la intención comunicativa de diferentes tipos de texto."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Infiere las temáticas que desarrolla un texto a partir de la información que contiene y el contexto de circulación en que se ubica."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Identifica la estructura de los textos que lee de acuerdo con su intención comunicativa."
+        }
+      ]
+    },
+    {
+      "grado": 4,
+      "numero": 7,
+      "enunciado": "Participa en espacios de discusión en los que adapta sus emisiones a los requerimientos de la situación comunicativa.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Participa en espacios de discusión grupal, como: conversatorios, exposiciones y tertulias, teniendo en cuenta la temática y la intencionalidad."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Comprende el sentido de las discusiones para manifestar sus puntos de vista en los temas verbales y no verbales."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Conduce los temas de los discursos de acuerdo con el posible desarrollo de los mismos."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Utiliza expresiones, gestos y una entonación coherentes con el propósito comunicativo."
+        }
+      ]
+    },
+    {
+      "grado": 4,
+      "numero": 8,
+      "enunciado": "Produce textos atiendo a elementos como el tipo de público al que va dirigido, el contexto de circulación, sus saberes previos y la diversidad de formatos de la que dispone para su presentación.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Define la tipología textual que empleará en la producción de un escrito a partir del análisis del propósito comunicativo."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Consulta diversos tipos de fuentes antes de redactar un texto."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Construye un plan de escritura para definir los contenidos de un texto."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Complementa el sentido de sus producciones escritas, mediante el uso consciente de recursos de puntuación, como la exclamación y la interrogación."
+        },
+        {
+          "numero": 5,
+          "descripcion": "Marca la tilde en las palabras agudas, graves y esdrújulas."
+        }
+      ]
+    },
+    {
+      "grado": 5,
+      "numero": 1,
+      "enunciado": "Utiliza la información que recibe de los medios de comunicación para participar en espacios discursivos de opinión.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Caracteriza los elementos constitutivos de la comunicación."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Reconoce los roles desempeñados por los sujetos que participan en las emisiones de los medios de comunicación."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Dialoga con sus compañeros sobre el sentido de los mensajes emitidos por los medios de comunicación masiva."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Selecciona la información de acuerdo con el formato en que ha sido presentada."
+        }
+      ]
+    },
+    {
+      "grado": 5,
+      "numero": 2,
+      "enunciado": "Interpreta mensajes directos e indirectos en algunas imágenes, símbolos o gestos.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Infiere el significado del lenguaje gestual y corporal de emoticones, gestos, fotografías y movimientos del cuerpo presentes en las situaciones comunicativas en las cuales participa."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Compara manifestaciones artísticas de acuerdo con sus características y las visiones de mundo del entorno local y regional."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Identifica la coherencia de las imágenes en los textos representados con ellas."
+        }
+      ]
+    },
+    {
+      "grado": 5,
+      "numero": 3,
+      "enunciado": "Comprende los roles que asumen los personajes en las obras literarias y su relación con la temática y la época en las que estas se desarrollan.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Establece diferencias entre narrador y autor, en los textos que lee y escribe."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Reconoce las temáticas de los textos literarios que lee para relacionarlas con su contexto cotidiano."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Identifica las características de los géneros literarios y establece nexos entre sus elementos constitutivos."
+        }
+      ]
+    },
+    {
+      "grado": 5,
+      "numero": 4,
+      "enunciado": "Reconoce en la lectura de los distintos géneros literarios diferentes posibilidades de recrear y ampliar su visión de mundo.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Expresa en sus escritos y enunciaciones la experiencia literaria que ha consolidado a partir de los textos con los que se relaciona."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Conoce diferentes culturas a partir de la lectura de textos literarios."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Deduce las semejanzas y diferencias de los géneros literarios a través de los textos que lee y escribe."
+        }
+      ]
+    },
+    {
+      "grado": 5,
+      "numero": 5,
+      "enunciado": "Comprende el sentido global de los mensajes, a partir de la relación entre la información explícita e implícita.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Asume una postura crítica y respetuosa frente a los mensajes que circulan en su medio."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Prevé los contenidos del mensaje de un emisor a partir de sus entonaciones y la manera como organiza un discurso."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Comprende la diferencia de diversos espacios de expresión oral, como la mesa redonda, el panel, el foro y el debate, atendiendo a su respectiva estructura."
+        }
+      ]
+    },
+    {
+      "grado": 5,
+      "numero": 6,
+      "enunciado": "Identifica la intención comunicativa de los textos con los que interactúa a partir del análisis de su contenido y estructura.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Reconoce la función social de los textos que lee y las visiones de mundo que proponen."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Aplica estrategias de comprensión a distintos tipos de texto que lee para dar cuenta de las relaciones entre diversos segmentos del mismo."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Organiza de forma jerárquica los contenidos de un texto en relación con la forma en que son presentados."
+        }
+      ]
+    },
+    {
+      "grado": 5,
+      "numero": 7,
+      "enunciado": "Construye textos orales atendiendo a los contextos de uso, a los posibles interlocutores y a las líneas temáticas pertinentes con el propósito comunicativo en el que se enmarca el discurso.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Reconoce los momentos adecuados para intervenir y para dar la palabra a los interlocutores de acuerdo con la situación y el propósito comunicativo."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Construye saberes con otros a través de espacios de intercambio oral en los que comparte sus ideas y sus experiencias de formación."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Ordena la información en secuencias lógicas acordes con la situación comunicativa particular."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Articula con claridad los sonidos del discurso y lee de manera fluida."
+        }
+      ]
+    },
+    {
+      "grado": 5,
+      "numero": 8,
+      "enunciado": "Produce textos verbales y no verbales a partir de los planes textuales que elabora según la tipología a desarrollar.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Establece relaciones de coherencia entre los conceptos a tratar, el tipo de texto a utilizar y la intención comunicativa que media su producción."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Elabora planes textuales que garantizan la progresión de las ideas que articula en un escrito."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Emplea técnicas para la organización de ideas como esquemas y mapas mentales."
+        }
+      ]
+    },
+    {
+      "grado": 6,
+      "numero": 1,
+      "enunciado": "Utiliza la información ofrecida por los medios de comunicación, teniendo en cuenta el mensaje, los interlocutores, la intencionalidad y el contexto de producción, para participar en los procesos comunicativos de su entorno.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Reconoce una visión particular de mundo de las distintas interlocuciones a las que accede en los medios de comunicación."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Interpreta los mensajes que circulan en los medios de comunicación de su contexto."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Busca información específica en los contenidos emitidos por diversos medios de comunicación."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Retoma los formatos empleados por algunos medios de comunicación y los emplea como modelos para sus elaboraciones textuales."
+        }
+      ]
+    },
+    {
+      "grado": 6,
+      "numero": 2,
+      "enunciado": "Crea organizadores gráficos en los que integra signos verbales y no verbales para dar cuenta de sus conocimientos.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Utiliza los organizadores gráficos para procesar la información que encuentra en diferentes fuentes."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Expone sus ideas en torno a un tema específico mediante organizadores gráficos."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Interpreta signos no verbales presentes en algunos textos gráficos, tales como mapas de ideas, cuadros sinópticos, planos, infografías y esquemas."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Reconoce cómo se relacionan y estructuran los símbolos, colores, señales e imágenes en los organizadores gráficos."
+        }
+      ]
+    },
+    {
+      "grado": 6,
+      "numero": 3,
+      "enunciado": "Reconoce las obras literarias como una posibilidad de circulación del conocimiento y de desarrollo de su imaginación.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Comprende que las obras literarias se enmarcan en contextos culturales e históricos que promueven la circulación de ciertos conocimientos."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Interpreta los argumentos y temáticas que se enuncian en las obras literarias para crear nuevos textos."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Define elementos literarios tales como personajes, lugar, tiempo, sentimientos acciones al interior de una obra literaria."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Reconoce que elementos como el ritmo y la rima se emplean para comunicar sentimientos o emociones cuando se declaman textos poéticos."
+        }
+      ]
+    },
+    {
+      "grado": 6,
+      "numero": 4,
+      "enunciado": "Identifica algunas expresiones de diferentes regiones y contextos en las obras literarias.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Reconoce que en las obras literarias se recrea la cultura propia de diferentes regiones."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Comprende el sentido que tienen algunas expresiones populares al interior de las obras literarias."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Clasifica expresiones formales y populares de la lengua en textos literarios."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Recita textos literarios en los que se emplean expresiones populares con diferentes matices de voz."
+        }
+      ]
+    },
+    {
+      "grado": 6,
+      "numero": 5,
+      "enunciado": "Interpreta obras de la tradición popular propias de su entorno.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Reconoce el componente cultural en coplas, trovas y refranes."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Distingue los sentidos de expresiones literales y figuradas que circulan en obras de la tradición popular."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Comprende los elementos líricos y las temáticas usadas en las expresiones artísticas de su entorno."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Identifica la estructura de los textos de la tradición oral y las semejanzas con otro tipo de composiciones."
+        },
+        {
+          "numero": 5,
+          "descripcion": "Identifica los elementos líricos que acompañan la pronunciación de expresiones populares."
+        }
+      ]
+    },
+    {
+      "grado": 6,
+      "numero": 6,
+      "enunciado": "Comprende diversos tipos de texto, a partir del análisis de sus contenidos, características formales e intenciones comunicativas.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Infiere la intención comunicativa de los textos (narrar, informar, exponer, argumentar, describir) a partir de las circunstancias en que han sido creados."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Reconoce que los textos son el resultado de un grupo de párrafos que desarrollan ideas con diferente jerarquía y que están relacionados entre sí por un contenido general."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Interpreta la función de elementos no verbales en el sentido del texto, como uso de negrita, corchetes, comillas, guiones, entre otros."
+        }
+      ]
+    },
+    {
+      "grado": 6,
+      "numero": 7,
+      "enunciado": "Produce discursos orales y los adecúa a las circunstancias del contexto: el público, la intención comunicativa y el tema a desarrollar.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Analiza el público a quien se dirige y las exigencias propias del contexto para producir textos orales."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Selecciona las ideas que emplea en un discurso oral."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Ordena su discurso de manera lógica para facilitar la comprensión de sus interlocutores."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Adecúa las cualidades de la voz (volumen, tono) para dar expresividad a sus producciones orales."
+        }
+      ]
+    },
+    {
+      "grado": 6,
+      "numero": 8,
+      "enunciado": "Produce diversos tipos de texto atendiendo a los destinatarios, al medio en que se escribirá y a los propósitos comunicativos.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Elige, entre diversos tipos de texto, aquel que mejor se adecúa al propósito comunicativo del texto que debe escribir."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Consulta diversas fuentes para nutrir sus textos, y comprende el sentido de lo que escribe atendiendo a factores como el contexto, la temática y el propósito comunicativo."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Tiene en cuenta las concordancias gramaticales entre los elementos de la oración (género, número) al momento de escribir textos."
+        }
+      ]
+    },
+    {
+      "grado": 7,
+      "numero": 1,
+      "enunciado": "Clasifica la información que circula en los medios de comunicación con los que interactúa y la retoma como referente para sus producciones discursivas.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Recoge información con el fin de expresar su punto de vista frente a los medios de comunicación con los que interactúa."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Selecciona la información principal que encuentra en los diferentes medios de comunicación y la utiliza para apoyar sus producciones."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Analiza la estructura de la información que circula por los medios de comunicación y la emplea como soporte para sus producciones discursivas."
+        }
+      ]
+    },
+    {
+      "grado": 7,
+      "numero": 2,
+      "enunciado": "Reconoce las diferencias y semejanzas entre sistemas verbales y no verbales para utilizarlos en contextos escolares y sociales.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Comprende la intención comunicativa de textos que contienen segmentos verbales y no verbales."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Interpreta los mensajes difundidos por medio de sistemas verbales y no verbales del contexto."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Reconoce la organización de los sistemas verbales y no verbales en el contexto y cómo estos contribuyen a dar sentido a los mensajes."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Comprende que los gestos permiten complementar los mensajes y ayudan en la construcción de sentido por parte del interlocutor."
+        }
+      ]
+    },
+    {
+      "grado": 7,
+      "numero": 3,
+      "enunciado": "Establece conexiones entre los elementos presentes en la literatura y los hechos históricos, culturales y sociales en los que se han producido.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Analiza el desarrollo de hechos históricos y conflictos sociales en historias presentes en obras literarias."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Comprende la realidad que circunda a las obras literarias a partir de los conflictos y hechos desarrollados en textos como novelas y obras teatrales."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Señala las diferencias entre textos literarios y no literarios que tratan hechos históricos y conflictos sociales a partir del reconocimiento de sus recursos estilísticos."
+        }
+      ]
+    },
+    {
+      "grado": 7,
+      "numero": 4,
+      "enunciado": "Clasifica las producciones literarias a partir del análisis de su contenido y estructura en diferentes géneros literarios.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Reconoce en los géneros literarios las visiones de mundo que imprimen los seres humanos en sus interacciones sociales."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Categoriza las temáticas de los textos literarios con los que interactúa y en función de ello establece el género al que pertenecen."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Analiza las características formales de los textos literarios con los que se relaciona, y a partir de ellas establece el género al que pertenecen y la época en que fueron escritos."
+        }
+      ]
+    },
+    {
+      "grado": 7,
+      "numero": 5,
+      "enunciado": "Comprende discursos orales producidos con un objetivo determinado en diversos contextos sociales y escolares.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Escucha los discursos orales de su entorno para deducir los propósitos comunicativos de un interlocutor."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Distingue líneas temáticas en los discursos que escucha, la manera como son planteadas por el autor, y las conexiones entre unas y otras a propósito de su intención comunicativa."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Anticipa la estructura con que un interlocutor puede organizar su discurso oral."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Discrimina los sonidos que hay en el ambiente para comprender el contexto donde se produce un discurso oral."
+        }
+      ]
+    },
+    {
+      "grado": 7,
+      "numero": 6,
+      "enunciado": "Interpreta textos informativos, expositivos, narrativos, líricos, argumentativos y descriptivos, y da cuenta de sus características formales y no formales.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Identifica y caracteriza al posible destinatario del texto a partir del tratamiento de la temática."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Identifica elementos como temáticas, léxico especializado y estilo empleados en los textos."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Ubica el texto en una tipología particular de acuerdo con su estructura interna y las características formales empleadas."
+        }
+      ]
+    },
+    {
+      "grado": 7,
+      "numero": 7,
+      "enunciado": "Construye narraciones orales, para lo cual retoma las características de los géneros que quiere relatar y los contextos de circulación de su discurso.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Define la estructura y el contenido de una producción oral, atendiendo a la necesidad comunicativa de narrar en un contexto particular. Da cuenta de la intencionalidad narrativa con la que ha elaborado su producción textual oral."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Explica las problemáticas principales de sus narraciones orales, teniendo en cuenta las impresiones de sus interlocutores."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Narra oralmente un acontecimiento en consideración a los elementos que componen una narración (lugar, tiempo, personajes, acciones)."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Articula los sonidos del discurso para dar claridad y expresividad a la narración."
+        }
+      ]
+    },
+    {
+      "grado": 7,
+      "numero": 8,
+      "enunciado": "Produce textos verbales y no verbales conforme a las características de una tipología seleccionada, a partir de un proceso de planificación textual.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Sabe cómo emplear diversos tipos de texto atendiendo al propósito comunicativo."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Desarrolla en sus textos un único tema central, alrededor del cual organiza una serie de subtemas."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Explica los conceptos principales de sus textos a partir de los párrafos en los que desarrolla su definición."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Prepara esquemas previos a la escritura para estructurar jerárquicamente las ideas a desenvolver en su texto. Usa diversos tipos de conectores para unir las ideas del texto."
+        }
+      ]
+    },
+    {
+      "grado": 8,
+      "numero": 1,
+      "enunciado": "Caracteriza los discursos presentes en los medios de comunicación y otras fuentes de información, atendiendo al contenido, la intención comunicativa del autor y al contexto en que se producen.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Identifica la función social de los medios de comunicación y otras fuentes de información de la cultura, como una forma de construcción de identidad."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Infiere el significado de palabras de acuerdo con el contexto en que se encuentren y los propósitos en que se enmarquen."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Selecciona estrategias para organizar la información que circula en los medios masivos de comunicación."
+        }
+      ]
+    },
+    {
+      "grado": 8,
+      "numero": 2,
+      "enunciado": "Relaciona las manifestaciones artísticas con las comunidades y culturas en las que se producen.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Valora expresiones artísticas propias de los distintos pueblos y comunidades."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Determina el contenido expresado en diferentes manifestaciones artísticas."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Resignifica las expresiones artísticas de origen popular para explorar usos no convencionales del léxico."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Reconoce las características de las distintas manifestaciones artísticas de una comunidad o grupo poblacional y las incorpora en sus elaboraciones."
+        }
+      ]
+    },
+    {
+      "grado": 8,
+      "numero": 3,
+      "enunciado": "Reconoce en las producciones literarias como cuentos, relatos cortos, fábulas y novelas, aspectos referidos a la estructura formal del género y a la identidad cultural que recrea.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Identifica las estrategias narrativas del autor para relatar su perspectiva sobre lo que ha ocurrido en una región."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Construye el sentido de los textos literarios con base en las interacciones que sostiene con las comunidades de lectores y escritores a las que pertenece."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Determina la identidad cultural presente en textos literarios y la relaciona con épocas y autores."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Distingue las estructuras formales de textos literarios como la presencia de diferentes narradores que se encargan de nutrir la historia con diferentes puntos de vista sobre un suceso."
+        }
+      ]
+    },
+    {
+      "grado": 8,
+      "numero": 4,
+      "enunciado": "Comprende que el género lírico es una construcción mediada por la musicalidad, la rima y el uso de figuras retóricas, que permiten recrear una idea, un sentimiento o una situación.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Relaciona los textos que lee con producciones artísticas en las que se presentan rimas, acompañamientos musicales o imágenes."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Reconoce el sentido de las imágenes poéticas en las obras literarias que lee."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Identifica elementos formales asociados a las figuras retóricas y al tipo de rima utilizada."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Comprende la diferencia que se presenta entre la segmentación silábica gramatical y la segmentación silábica métrica, en los textos poéticos que lee o escribe."
+        }
+      ]
+    },
+    {
+      "grado": 8,
+      "numero": 5,
+      "enunciado": "Escucha con atención a sus compañeros en diálogos informales y predice los contenidos de la comunicación.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Participa en espacios discursivos que se dan en la cotidianidad de la escuela con el propósito de conocer las posturas de sus compañeros frente a diversos temas."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Comprende los contenidos de un diálogo y predice las posibles ideas que pueden darse en él."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Identifica el nivel de formalidad o informalidad que se da en un diálogo con sus compañeros."
+        }
+      ]
+    },
+    {
+      "grado": 8,
+      "numero": 6,
+      "enunciado": "Infiere múltiples sentidos en los textos que lee y los relaciona con los conceptos macro del texto y con sus contextos de producción y circulación.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Identifica y caracteriza las voces que hablan en el texto."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Elabora hipótesis sobre el sentido global de un texto a partir de la relación de información explícita e implícita."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Identifica las características retóricas de las tipologías textuales con las que trabaja y señala en sus notas de clase los conceptos más relevantes."
+        }
+      ]
+    },
+    {
+      "grado": 8,
+      "numero": 7,
+      "enunciado": "Reconstruye en sus intervenciones el sentido de los textos desde la relación existente entre la temática, los interlocutores y el contexto histórico-cultural.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Expone sus puntos de vista para apoyar o contradecir las opiniones de sus interlocutores."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Precisa el significado de los principales conceptos tratados en los textos orales que produce."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Prepara una estructura retórica que contempla el contexto formal, el papel del orador y la posición del auditorio, como base para los intercambios orales en debates, plenarias y sustentaciones."
+        }
+      ]
+    },
+    {
+      "grado": 8,
+      "numero": 8,
+      "enunciado": "Compone diferentes tipos de texto atendiendo a las características de sus ámbitos de uso: privado/público o cotidiano/científico.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Estructura los textos que compone, para lo cual elige entre las diferentes formas que puede asumir la expresión (narración, explicación, descripción, argumentación) y su adecuación al ámbito de uso."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Evalúa sus propios textos atendiendo a las características del género, el léxico empleado y el propósito comunicativo."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Evalúa el uso adecuado de elementos gramaticales y ortográficos en las producciones propias y en las de otros."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Emplea de forma precisa los signos de puntuación."
+        }
+      ]
+    },
+    {
+      "grado": 9,
+      "numero": 1,
+      "enunciado": "Confronta los discursos provenientes de los medios de comunicación con los que interactúa en el medio para afianzar su punto de vista particular.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Participa en medios escolares en los que plantea su postura frente a un acontecimiento, situación o problemática que llama su atención o que incide en la cotidianidad institucional."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Infiere significados implícitos, referentes ideológicos, sociales y culturales en los medios con los que interactúa."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Elabora esquemas en los que relaciona las problemáticas que identifica en los medios de comunicación para proponer alternativas de confrontación y resolución."
+        }
+      ]
+    },
+    {
+      "grado": 9,
+      "numero": 2,
+      "enunciado": "Incorpora símbolos de orden deportivo, cívico, político, religioso, científico o publicitario en los discursos que produce, teniendo claro su uso dentro del contexto.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Identifica la función que cumplen diferentes símbolos y signos en los contextos comunicativos en los que participa."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Reconoce el sentido de los símbolos presentes en desfiles, carnavales, exposiciones, entre otros."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Utiliza símbolos, íconos u otras representaciones gráficas en los discursos que produce y los vincula con los conceptos de las temáticas a las que se refieren."
+        }
+      ]
+    },
+    {
+      "grado": 9,
+      "numero": 3,
+      "enunciado": "Analiza el lenguaje literario como una manifestación artística que permite crear ficciones y expresar pensamientos o emociones.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Relaciona su interpretación de una obra literaria con las visiones de mundo vigentes en una época y/o movimiento literario."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Reconoce la literatura como una memoria de los pensamientos y sucesos de una región o un país."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Identifica el sentido del lenguaje figurado dentro de los textos que lee y expresa sus interpretaciones sobre el mismo."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Reconoce que la literatura puede emplear lenguaje figurado y coloquial para dar expresividad al escrito."
+        }
+      ]
+    },
+    {
+      "grado": 9,
+      "numero": 4,
+      "enunciado": "Compara los formatos de obras literarias y de producciones audiovisuales con el propósito de analizar elementos propios de la narración.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Identifica estrategias narrativas relacionadas con el abordaje de hechos históricos o problemáticas reales, en obras literarias o en producciones cinematográficas."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Reconoce las problemáticas o los hechos narrados en obras literarias y en producciones audiovisuales."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Reconoce la forma como se presentan los contenidos en textos literarios (prosa o verso) y en textos audiovisuales (planos, ángulos, movimientos de la cámara)."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Reconoce los sonidos presentes en producciones audiovisuales: ruidos ambientales, música y cambios en la voz de los personajes."
+        }
+      ]
+    },
+    {
+      "grado": 9,
+      "numero": 5,
+      "enunciado": "Comprende y respeta las opiniones en debates sobre temas de actualidad social.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Respeta los diferentes puntos de vista de sus compañeros y los turnos para tomar la palabra, en los debates en los que participa."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Reconoce las posiciones de sus compañeros en un debate, a partir de la comparación entre lo que escucha y lo que piensa en torno a un tema."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Comprende la estructura o la organización del debate a fin de garantizar la participación de distintas voces con posiciones contrarias."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Analiza las características de la voz de sus interlocutores con el propósito de comprender el tono del discurso: ironía, agresividad, etc."
+        }
+      ]
+    },
+    {
+      "grado": 9,
+      "numero": 6,
+      "enunciado": "Interpreta textos atendiendo al funcionamiento de la lengua en situaciones de comunicación, a partir del uso de estrategias de lectura.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Da cuenta del papel que desempeñan el interlocutor y el contexto en relación con la temática tratada y plantea su posición sobre la misma."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Infiere significados implícitos y referentes ideológicos, sociales y culturales en los textos que lee."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Identifica las estructuras propias de las tipologías textuales que conoce."
+        }
+      ]
+    },
+    {
+      "grado": 9,
+      "numero": 7,
+      "enunciado": "Produce textos orales, a partir del empleo de diversas estrategias para exponer sus argumentos.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Argumenta las posturas y sugerencias que plantea, en el momento de proponer alternativas para resolver un problema."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Explica el significado de los conceptos que utiliza en sus opiniones y realiza una síntesis de las ideas más relevantes de su intervención."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Da cuenta del orden en el que se produce una conversación y de los mecanismos que median la toma de decisiones y la interacción oral con otros."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Corrige la pronunciación cuando no ha articulado con claridad los sonidos del discurso."
+        },
+        {
+          "numero": 5,
+          "descripcion": "Controla los matices de voz (tono, volumen, impostación) para apoyar su discurso."
+        }
+      ]
+    },
+    {
+      "grado": 9,
+      "numero": 8,
+      "enunciado": "Produce textos verbales y no verbales, a partir de los planes textuales que elabora, y siguiendo procedimientos sistemáticos de corrección lingüística.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Evalúa el rol que debe cumplir como enunciador de un texto, según el propósito elegido y la situación comunicativa particular."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Evalúa estrategias de progresión y desarrollo del tema seleccionado."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Evalúa el seguimiento de un plan textual y el uso adecuado de elementos gramaticales y ortográficos en los textos que escribe."
+        }
+      ]
+    },
+    {
+      "grado": 10,
+      "numero": 1,
+      "enunciado": "Asume una posición crítica y propositiva frente a los medios de comunicación masiva para analizar su influencia en la sociedad actual.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Valora la diversidad de visiones de mundo y posiciones ideológicas presentes en los medios de comunicación."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Analiza los discursos culturales, sociales e ideológicos, expresados a través de distintos medios de comunicación."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Encuentra claves para comunicar sus ideas en la diferenciación de la estructura de textos como: el discurso político, el artículo de opinión y la caricatura."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Comprende diferentes tipos de argumentos presentes en un discurso."
+        }
+      ]
+    },
+    {
+      "grado": 10,
+      "numero": 2,
+      "enunciado": "Planea la producción de textos audiovisuales en los que articula elementos verbales y no verbales de la comunicación para desarrollar un tema o una historia.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Produce guiones para textos audiovisuales, donde caracteriza diferentes culturas, teniendo en cuenta aspectos étnicos, lingüísticos, sociales y culturales, entre otros, del mundo contemporáneo."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Construye textos verbales y no verbales, donde demuestra un amplio conocimiento tanto del tema elegido como de las relaciones de significado y de sentido a nivel local y global."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Elabora guiones para la producción de textos audiovisuales, como cortos o películas, en los que integra recursos no verbales."
+        }
+      ]
+    },
+    {
+      "grado": 10,
+      "numero": 3,
+      "enunciado": "Caracteriza la literatura en un momento particular de la historia desde el acercamiento a sus principales exponentes, textos, temáticas y recursos estilísticos.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Comprende la influencia de las épocas en la estructura y configuración de los géneros literarios."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Reconoce y da cuenta de las temáticas, los exponentes y los perfiles estilísticos de las obras literarias de una época o movimiento literario."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Identifica las estructuras propias de cada género literario."
+        }
+      ]
+    },
+    {
+      "grado": 10,
+      "numero": 4,
+      "enunciado": "Formula puntos de encuentro entre la literatura y las artes plásticas y visuales.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Amplía su visión de las corrientes literarias mediante el conocimiento de las manifestaciones artísticas de una época determinada."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Determina las principales características de los textos literarios que lee y los relaciona con expresiones artísticas."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Reconoce las diferencias formales entre las obras literarias y las artes plásticas o visuales."
+        }
+      ]
+    },
+    {
+      "grado": 10,
+      "numero": 5,
+      "enunciado": "Participa en discursos orales en los que evalúa aspectos relacionados con la progresión temática, manejo de la voz, tono, estilo y puntos de vista sobre temas sociales, culturales, políticos y científicos.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Profundiza en los contextos en los que se dan las temáticas tratadas, a partir de la búsqueda de información en diversas fuentes."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Evalúa la progresión temática, tono, estilo y vocabulario presentes en las intervenciones propias y en las de los otros."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Comprende contenidos que no se dicen explícitamente por medio de ambigüedades o dobles sentidos."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Aplica en su discurso oral la estructura de textos específicos como la ponencia o el debate."
+        },
+        {
+          "numero": 5,
+          "descripcion": "Infiere datos de sus interlocutores como carácter, actitud, propósito comunicativo a partir de las modulaciones de voz que estos emplean."
+        }
+      ]
+    },
+    {
+      "grado": 10,
+      "numero": 6,
+      "enunciado": "Comprende diversos tipos de texto, asumiendo una actitud crítica y argumentando sus puntos de vista frente a lo leído.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Deduce referentes sociales, culturales o ideológicos presentes en las voces que hablan en el texto y argumenta su posición al respecto."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Evalúa textos escritos teniendo en cuenta el plan de contenido, las relaciones de sentido y las estrategias discursivas empleadas."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Identifica las estrategias organizativas sugeridas en el texto."
+        }
+      ]
+    },
+    {
+      "grado": 10,
+      "numero": 7,
+      "enunciado": "Produce textos orales como ponencias, comentarios, relatorías o entrevistas, atendiendo a la progresión temática, a los interlocutores, al propósito y a la situación comunicativa.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Expresa de manera coherente y respetuosa sus posicionamientos frente a un texto o situación comunicativa cuando participa en espacios de discusión."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Demuestra apropiación en el dominio del tema al explicar el significado de los conceptos clave que utiliza en sus opiniones."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Construye un texto para ser leído en voz alta, como una relatoría, teniendo en cuenta la progresión temática y el uso de diversos tipos de argumentos."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Interviene oralmente empleando aspectos no verbales de la comunicación como la impostación, el volumen y el tono de voz."
+        }
+      ]
+    },
+    {
+      "grado": 10,
+      "numero": 8,
+      "enunciado": "Escribe textos que evidencian procedimientos sistemáticos de corrección lingüística y el uso de estrategias de producción textual.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Divulga información científica sobre temas de su interés, mediante textos que motivan a sus compañeros a conocer dichas temáticas."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Identifica el contenido que abarca la problemática desarrollada y evalúa los mecanismos que le dan sentido global al texto."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Evalúa el uso adecuado de elementos gramaticales, ortográficos y sintácticos en los textos que produce."
+        }
+      ]
+    },
+    {
+      "grado": 11,
+      "numero": 1,
+      "enunciado": "Participa en escenarios académicos, políticos y culturales; asumiendo una posición crítica y propositiva frente a los discursos que le presentan los distintos medios de comunicación y otras fuentes de información.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Analiza la información difundida en los medios de comunicación institucionales y regionales, para participar en procesos democráticos."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Infiere la relación de los mensajes emitidos por los medios de comunicación masiva dentro de contextos sociales, culturales y políticos."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Contrasta estilos, tonos y estrategias discursivas, para determinar sus modos de participación en los escenarios democráticos institucionales."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Comprende que la entonación revela la intención de resaltar o encubrir información de parte del interlocutor."
+        }
+      ]
+    },
+    {
+      "grado": 11,
+      "numero": 2,
+      "enunciado": "Expresa, con sentido crítico, cómo se articulan los códigos verbales y no verbales en diversas manifestaciones humanas y da cuenta de sus implicaciones culturales, sociales e ideológicas.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Identifica la intencionalidad de los anuncios publicitarios, políticos y deportivos que se producen en el contexto social y cultural."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Comprende el sentido literal y figurado de distintos símbolos empleados en los medios de comunicación."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Clasifica los elementos simbólicos presentes en diferentes situaciones como una clase, un videoclip o un concierto musical."
+        }
+      ]
+    },
+    {
+      "grado": 11,
+      "numero": 3,
+      "enunciado": "Determina los textos que desea leer y la manera en que abordará su comprensión, con base en sus experiencias de formación e inclinaciones literarias.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Determina en los textos literarios las expresiones que pueden incidir tanto en las concepciones políticas, religiosas y culturales, como en la construcción de ciudadanía."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Conjuga la lectura individual con la discusión grupal sobre los textos literarios."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Comprende las temáticas, características, estilos, tonos, sentido local y global de las obras literarias que lee."
+        }
+      ]
+    },
+    {
+      "grado": 11,
+      "numero": 4,
+      "enunciado": "Identifica, en las producciones literarias clásicas, diferentes temas que le permiten establecer comparaciones con las visiones de mundo de otras épocas.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Asume una postura frente a la vigencia de las obras literarias clásicas."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Analiza obras literarias clásicas y las compara con otras que no pertenecen al canon."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Reconoce que en las obras clásicas se abordan temas que vinculan a los seres humanos de diferentes épocas."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Encuentra que el sentido de las obras literarias clásicas está determinado por sus recursos narrativos, poéticos y dramáticos."
+        }
+      ]
+    },
+    {
+      "grado": 11,
+      "numero": 5,
+      "enunciado": "Comprende que los argumentos de sus interlocutores involucran procesos de comprensión, crítica y proposición.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Entiende las implicaciones sociales, políticas e ideológicas de los discursos que escucha."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Comprende las posturas de un discurso sobre un tema de interés social y las relaciona con sus posturas previas."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Comprende diferentes tipos de argumentos presentes en un discurso."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Infiere las variantes dialectales, sociales y geográficas en la voz de sus interlocutores."
+        }
+      ]
+    },
+    {
+      "grado": 11,
+      "numero": 6,
+      "enunciado": "Compara diversos tipos de texto, con capacidad crítica y argumentativa para establecer relaciones entre temáticas, características y los múltiples contextos en los que fueron producidos.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Relaciona el significado del texto con los contextos sociales, culturales y políticos en los que fue producido y plantea su posición al respecto."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Contrasta textos, atendiendo a temáticas, características formales, estructura interna, léxico y estilo empleados, entre otros."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Da cuenta de la organización y de los componentes del texto."
+        }
+      ]
+    },
+    {
+      "grado": 11,
+      "numero": 7,
+      "enunciado": "Expresa por medio de producciones orales el dominio de un tema, un texto o la obra de un autor.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Enfatiza la importancia académica de un tema de su interés personal."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Hace referencia a los contenidos de otros textos en sus producciones orales."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Construye relaciones de contenido entre temas, categorías y conceptos."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Desarrolla un tema académico de su interés, a través de la estructura de introducción, justificación, argumentación y conclusiones."
+        },
+        {
+          "numero": 5,
+          "descripcion": "Evita el uso de falacias en discusiones académicas."
+        }
+      ]
+    },
+    {
+      "grado": 11,
+      "numero": 8,
+      "enunciado": "Produce textos académicos a partir de procedimientos sistemáticos de corrección lingüística, atendiendo al tipo de texto y al contexto comunicativo.",
+      "evidencias": [
+        {
+          "numero": 1,
+          "descripcion": "Evalúa la adecuación del texto en relación con su rol como enunciatario, las estrategias discursivas utilizadas y la visión de mundo que proyecta en su escrito."
+        },
+        {
+          "numero": 2,
+          "descripcion": "Evalúa el seguimiento de un plan textual y el uso de la lengua en textos propios y producidos por sus compañeros."
+        },
+        {
+          "numero": 3,
+          "descripcion": "Construye párrafos que tienen funciones específicas dentro del discurso como ampliar, introducir, sintetizar y concluir."
+        },
+        {
+          "numero": 4,
+          "descripcion": "Emplea diferentes tipos de argumento para sustentar sus puntos de vista."
+        }
+      ]
+    }
+  ]
+}

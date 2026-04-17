@@ -40,3 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .gstack/
+
+# DBA ingestion source PDFs (publicly available at colombiaaprende.edu.co)
+/data/dba-source/
