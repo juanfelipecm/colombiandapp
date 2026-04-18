@@ -47,17 +47,27 @@ export type GeneratedPlan = {
 };
 
 /**
- * Build the Zod schema for a generated plan, keyed by the actual grades the teacher selected.
- * The grade-string-keyed record forces the model to emit one entry per selected grade;
- * missing grades fail validation fast.
+ * Build the Zod schema for a generated plan, keyed by the actual grades AND
+ * materia UUIDs the teacher selected. Both layers are materialized as specific
+ * property keys (not records keyed by regex), so:
+ *   - missing grades fail validation fast
+ *   - missing materias fail validation fast
+ *   - Anthropic tool_use sees an exhaustively-keyed schema, which is the
+ *     strongest guidance we can give it (tool_use schemas are coaching, not
+ *     hard constraints — tight keys reduce drift)
+ *
+ * Both `selectedGrados` and `selectedMateriaIds` must be non-empty.
  */
-export function buildPlanSchema(selectedGrados: number[]) {
+export function buildPlanSchema(
+  selectedGrados: number[],
+  selectedMateriaIds: string[],
+) {
   if (selectedGrados.length === 0) {
     throw new Error("buildPlanSchema: selectedGrados must be non-empty");
   }
-
-  const gradoStrings = selectedGrados.map(String) as [string, ...string[]];
-  const gradoEnum = z.enum(gradoStrings);
+  if (selectedMateriaIds.length === 0) {
+    throw new Error("buildPlanSchema: selectedMateriaIds must be non-empty");
+  }
 
   const dbaRef = z.object({
     dba_token: dbaTokenSchema,
@@ -70,15 +80,28 @@ export function buildPlanSchema(selectedGrados: number[]) {
     dba_tokens: z.array(dbaTokenSchema).min(1).max(2),
   });
 
+  // Materia layer: one explicit key per selected materia UUID.
+  const perMateriaShape: Record<string, typeof activity> = {};
+  for (const materiaId of selectedMateriaIds) {
+    // Validate the caller gave us real UUIDs so we don't ship junk keys into the tool schema.
+    materiaIdSchema.parse(materiaId);
+    perMateriaShape[materiaId] = activity;
+  }
+  const perMateria = z.object(perMateriaShape);
+
+  // Grade layer: one explicit key per selected grade (as string).
+  const perGradoShape: Record<string, typeof perMateria> = {};
+  for (const grado of selectedGrados) {
+    perGradoShape[String(grado)] = perMateria;
+  }
+  const actividadesSchema = z.object(perGradoShape);
+
   const phase = z.object({
     orden: z.number().int().min(1).max(4),
     nombre: z.string().min(3).max(80),
     dias_label: z.string().min(3).max(60),
     descripcion: z.string().min(10).max(800),
-    actividades: z.record(
-      gradoEnum,
-      z.record(materiaIdSchema, activity),
-    ),
+    actividades: actividadesSchema,
   });
 
   const dbaTarget = z.object({
@@ -111,8 +134,9 @@ export type PlanSchema = ReturnType<typeof buildPlanSchema>;
  */
 export function buildPlanJsonSchema(
   selectedGrados: number[],
+  selectedMateriaIds: string[],
 ): Anthropic.Messages.Tool.InputSchema {
-  const zod = buildPlanSchema(selectedGrados);
+  const zod = buildPlanSchema(selectedGrados, selectedMateriaIds);
   const raw = zodToJsonSchema(zod, { target: "openApi3" }) as Record<string, unknown>;
   delete raw.$schema;
   delete raw.definitions;

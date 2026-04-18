@@ -25,7 +25,7 @@ export function validatePlan(
   ctx: DbaContext,
   inputs: ValidateInputs,
 ): ValidateResult {
-  const schema = buildPlanSchema(inputs.grados);
+  const schema = buildPlanSchema(inputs.grados, inputs.materiaIds);
 
   // Pass 1: structural
   const parsed = schema.safeParse(rawOutput);

@@ -242,6 +242,31 @@ describe("generateProject", () => {
     expect(fases).toBeDefined();
   });
 
+  it("unwraps { input: <plan> } when Opus double-wraps the tool payload", async () => {
+    const supabase = fakeSupabase();
+    // Simulate the observed Opus quirk where tool_use.input arrives as
+    // { input: { ...actualPlan... } } instead of { ...actualPlan... }.
+    const doubleWrapped = { input: validPlan() };
+    const anthropic = fakeAnthropic([{ type: "tool_use", input: doubleWrapped }]);
+    const result = await generateProject(baseInputs, { supabase, anthropic });
+
+    expect(result.plan.titulo).toContain("quebrada");
+    expect(result.attempts[0].status).toBe("success");
+  });
+
+  it("does NOT unwrap when the top-level object has an 'input' key but is not a plan", async () => {
+    const supabase = fakeSupabase();
+    // Shouldn't trigger the unwrap — no plan keys inside. Lands as a validation failure instead.
+    const spurious = { input: { foo: "bar" } };
+    const anthropic = fakeAnthropic([
+      { type: "tool_use", input: spurious },
+      { type: "tool_use", input: spurious },
+    ]);
+    await expect(generateProject(baseInputs, { supabase, anthropic })).rejects.toBeInstanceOf(
+      PlanValidationError,
+    );
+  });
+
   it("wraps the prior tool input in <previous_output> tags on retry", async () => {
     const supabase = fakeSupabase();
     const bad = {

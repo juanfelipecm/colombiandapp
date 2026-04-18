@@ -52,13 +52,13 @@ const validPlan = (overrides: Record<string, unknown> = {}) => ({
 
 describe("buildPlanSchema", () => {
   it("accepts a well-formed plan for one grade", () => {
-    const schema = buildPlanSchema([1]);
+    const schema = buildPlanSchema([1], ["11111111-1111-1111-1111-111111111111"]);
     const result = schema.safeParse(validPlan());
     expect(result.success).toBe(true);
   });
 
   it("accepts five grades and validates all grade-string keys", () => {
-    const schema = buildPlanSchema([1, 2, 3, 4, 5]);
+    const schema = buildPlanSchema([1, 2, 3, 4, 5], ["11111111-1111-1111-1111-111111111111"]);
     const mat = "11111111-1111-1111-1111-111111111111";
     const activity = {
       tarea: "Actividad adecuada al grado.",
@@ -93,19 +93,16 @@ describe("buildPlanSchema", () => {
   });
 
   it("rejects a plan missing a selected grade key", () => {
-    const schema = buildPlanSchema([1, 2]);
+    const schema = buildPlanSchema([1, 2], ["11111111-1111-1111-1111-111111111111"]);
     const plan = validPlan(); // only has "1"
     const result = schema.safeParse(plan);
-    // Zod allows extra keys by default but we need BOTH grades to pass semantic validation,
-    // not schema validation. Here schema permits since grado 2 simply has no activities key.
-    // Schema-level: we actually require BOTH keys at runtime check via `.record(enum)` - but
-    // zod record doesn't require enum exhaustiveness by default. Test expected behavior:
-    // schema passes (record allows missing keys), semantic validator catches the gap.
-    expect(result.success).toBe(true);
+    // Actividades is now z.object({"1": ..., "2": ...}) — both keys required at the
+    // schema level, so a missing grade fails Zod parse (not deferred to semantic pass).
+    expect(result.success).toBe(false);
   });
 
   it("rejects a plan with a grade key NOT in the selection", () => {
-    const schema = buildPlanSchema([1, 2]);
+    const schema = buildPlanSchema([1, 2], ["11111111-1111-1111-1111-111111111111"]);
     const plan = validPlan({
       fases: [
         {
@@ -137,7 +134,7 @@ describe("buildPlanSchema", () => {
   });
 
   it("rejects malformed DBA tokens", () => {
-    const schema = buildPlanSchema([1]);
+    const schema = buildPlanSchema([1], ["11111111-1111-1111-1111-111111111111"]);
     const plan = validPlan({
       dba_targets: [
         {
@@ -151,23 +148,24 @@ describe("buildPlanSchema", () => {
   });
 
   it("rejects empty materiales list", () => {
-    const schema = buildPlanSchema([1]);
+    const schema = buildPlanSchema([1], ["11111111-1111-1111-1111-111111111111"]);
     expect(schema.safeParse(validPlan({ materiales: [] })).success).toBe(false);
   });
 
   it("requires at least 2 fases", () => {
-    const schema = buildPlanSchema([1]);
+    const schema = buildPlanSchema([1], ["11111111-1111-1111-1111-111111111111"]);
     const p = validPlan();
     p.fases = [p.fases[0]];
     expect(schema.safeParse(p).success).toBe(false);
   });
 
   it("throws when given 0 selected grades", () => {
-    expect(() => buildPlanSchema([])).toThrowError(/non-empty/);
+    expect(() => buildPlanSchema([], ["11111111-1111-1111-1111-111111111111"])).toThrowError(/non-empty/);
+    expect(() => buildPlanSchema([1], [])).toThrowError(/non-empty/);
   });
 
   it("accepts null evidencia_index", () => {
-    const schema = buildPlanSchema([1]);
+    const schema = buildPlanSchema([1], ["11111111-1111-1111-1111-111111111111"]);
     const plan = validPlan({
       dba_targets: [
         {
@@ -183,7 +181,7 @@ describe("buildPlanSchema", () => {
 
 describe("buildPlanJsonSchema", () => {
   it("emits a root-object JSON Schema compatible with Anthropic tool_use", () => {
-    const schema = buildPlanJsonSchema([1, 5]) as Record<string, unknown>;
+    const schema = buildPlanJsonSchema([1, 5], ["11111111-1111-1111-1111-111111111111"]) as Record<string, unknown>;
     expect(schema.type).toBe("object");
     expect(schema.properties).toBeTypeOf("object");
     const props = schema.properties as Record<string, unknown>;
@@ -195,21 +193,34 @@ describe("buildPlanJsonSchema", () => {
     expect(schema.definitions).toBeUndefined();
   });
 
-  it("forces both selected grades as required keys under actividades", () => {
-    const schema = buildPlanJsonSchema([1, 5]) as Record<string, unknown>;
+  it("forces both selected grades AND materia UUIDs as required keys under actividades", () => {
+    const matA = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+    const matB = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
+    const schema = buildPlanJsonSchema([1, 5], [matA, matB]) as Record<string, unknown>;
     const fases = (schema.properties as Record<string, unknown>).fases as Record<string, unknown>;
     const faseItems = fases.items as Record<string, unknown>;
     const faseProps = faseItems.properties as Record<string, unknown>;
     const actividades = faseProps.actividades as Record<string, unknown>;
     expect(actividades.type).toBe("object");
-    // Zod record(enum) becomes properties for each enum value + required.
+
+    // Grade layer: explicit properties for each grade with required.
     const actividadesProps = actividades.properties as Record<string, unknown>;
     expect(actividadesProps["1"]).toBeDefined();
     expect(actividadesProps["5"]).toBeDefined();
     expect(actividades.required).toEqual(expect.arrayContaining(["1", "5"]));
+
+    // Materia layer under grade "1": explicit properties for each materia UUID
+    // with required. This is the fix for the "model elided the materia_id layer"
+    // failure mode — no more additionalProperties-as-value.
+    const grade1 = actividadesProps["1"] as Record<string, unknown>;
+    const grade1Props = grade1.properties as Record<string, unknown>;
+    expect(grade1Props[matA]).toBeDefined();
+    expect(grade1Props[matB]).toBeDefined();
+    expect(grade1.required).toEqual(expect.arrayContaining([matA, matB]));
   });
 
   it("throws when given zero grades", () => {
-    expect(() => buildPlanJsonSchema([])).toThrowError(/non-empty/);
+    expect(() => buildPlanJsonSchema([], ["11111111-1111-1111-1111-111111111111"])).toThrowError(/non-empty/);
+    expect(() => buildPlanJsonSchema([1], [])).toThrowError(/non-empty/);
   });
 });
