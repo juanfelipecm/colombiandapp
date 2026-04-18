@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPlanSchema } from "@/lib/ai/plan-schema";
+import { buildPlanJsonSchema, buildPlanSchema } from "@/lib/ai/plan-schema";
 
 const validPlan = (overrides: Record<string, unknown> = {}) => ({
   titulo: "Exploramos el agua de nuestra vereda",
@@ -178,5 +178,38 @@ describe("buildPlanSchema", () => {
       ],
     });
     expect(schema.safeParse(plan).success).toBe(true);
+  });
+});
+
+describe("buildPlanJsonSchema", () => {
+  it("emits a root-object JSON Schema compatible with Anthropic tool_use", () => {
+    const schema = buildPlanJsonSchema([1, 5]) as Record<string, unknown>;
+    expect(schema.type).toBe("object");
+    expect(schema.properties).toBeTypeOf("object");
+    const props = schema.properties as Record<string, unknown>;
+    expect(props.titulo).toBeDefined();
+    expect(props.fases).toBeDefined();
+    expect(props.dba_targets).toBeDefined();
+    // No $schema / definitions leak
+    expect(schema.$schema).toBeUndefined();
+    expect(schema.definitions).toBeUndefined();
+  });
+
+  it("forces both selected grades as required keys under actividades", () => {
+    const schema = buildPlanJsonSchema([1, 5]) as Record<string, unknown>;
+    const fases = (schema.properties as Record<string, unknown>).fases as Record<string, unknown>;
+    const faseItems = fases.items as Record<string, unknown>;
+    const faseProps = faseItems.properties as Record<string, unknown>;
+    const actividades = faseProps.actividades as Record<string, unknown>;
+    expect(actividades.type).toBe("object");
+    // Zod record(enum) becomes properties for each enum value + required.
+    const actividadesProps = actividades.properties as Record<string, unknown>;
+    expect(actividadesProps["1"]).toBeDefined();
+    expect(actividadesProps["5"]).toBeDefined();
+    expect(actividades.required).toEqual(expect.arrayContaining(["1", "5"]));
+  });
+
+  it("throws when given zero grades", () => {
+    expect(() => buildPlanJsonSchema([])).toThrowError(/non-empty/);
   });
 });

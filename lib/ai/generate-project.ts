@@ -2,7 +2,13 @@ import Anthropic from "@anthropic-ai/sdk";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildDbaContext, type DbaContext } from "./dba-context";
 import { AnthropicError, PlanValidationError } from "./errors";
-import { PROMPT_MODEL, PROMPT_VERSION, type GeneratedPlan } from "./plan-schema";
+import {
+  PLAN_TOOL_NAME,
+  PROMPT_MODEL,
+  PROMPT_VERSION,
+  buildPlanJsonSchema,
+  type GeneratedPlan,
+} from "./plan-schema";
 import { validatePlan } from "./plan-validator";
 import { SYSTEM_PROMPT, buildUserPrompt, type WizardInputs } from "./prompt-template";
 
@@ -25,10 +31,10 @@ export type GenerateResult = {
 };
 
 const DEFAULT_MAX_TOKENS = 16000;
-// 3 minutes. Opus 4.7 can take 60-120s on complex structured JSON; 50s was too
-// tight and produced api_error timeouts on normal-sized inputs. The Vercel
-// platform timeout is the real ceiling (see maxDuration on the route).
-const DEFAULT_TIMEOUT_MS = 180_000;
+// 140s per attempt. Two attempts worst case = 280s, fits under the route's
+// 300s maxDuration with buffer. Observed latencies for successful runs are
+// 52-120s, so 140s is a comfortable ceiling.
+const DEFAULT_TIMEOUT_MS = 140_000;
 
 export type GenerateDeps = {
   supabase: SupabaseClient;
@@ -38,15 +44,14 @@ export type GenerateDeps = {
 };
 
 /**
- * Orchestrates one logical generation: fetch DBAs, build prompt, call Anthropic,
- * parse + validate the response. Retries ONCE with error context on validation failure.
+ * Orchestrates one logical generation: fetch DBAs, build prompt, call Anthropic
+ * with a forced tool_use so the SDK returns a structured object (never a JSON
+ * string we'd have to parse), validate semantically. Retries ONCE on validation
+ * failure with the prior errors attached as a hint.
  *
- * Returns the validated plan plus the full DBA context (needed to resolve tokens → UUIDs
- * before DB insert) plus the per-attempt log entries for project_generation_logs.
- *
- * Throws AnthropicError on network/API errors. Throws PlanValidationError if both
- * attempts fail validation. The `attempts` array is attached to both thrown errors
- * via `.cause` so callers can persist them.
+ * Throws AnthropicError on network/API errors. Throws PlanValidationError if
+ * both attempts fail validation. The `attempts` array is attached to both
+ * thrown errors via `.cause` so callers can persist them.
  */
 export async function generateProject(
   inputs: WizardInputs,
@@ -63,6 +68,7 @@ export async function generateProject(
   const ctx = await buildDbaContext(deps.supabase, inputs.grados, inputs.materia_ids);
 
   const userPrompt = buildUserPrompt(inputs, ctx);
+  const inputSchema = buildPlanJsonSchema(inputs.grados);
   const attempts: GenerateAttempt[] = [];
 
   // Attempt 1
@@ -73,6 +79,7 @@ export async function generateProject(
     model: PROMPT_MODEL,
     maxTokens,
     timeoutMs,
+    inputSchema,
     attemptNumber: 1,
   });
   attempts.push(attempt1.entry);
@@ -109,6 +116,7 @@ export async function generateProject(
     model: PROMPT_MODEL,
     maxTokens,
     timeoutMs,
+    inputSchema,
     attemptNumber: 2,
   });
   attempts.push(attempt2.entry);
@@ -137,12 +145,17 @@ export async function generateProject(
   }
 }
 
-function buildRetryHint(entry: GenerateAttempt, rawOutput: unknown): string {
+function buildRetryHint(entry: GenerateAttempt, priorInput: unknown): string {
   const hint =
-    "The previous response failed validation. Read the errors below and return a corrected JSON response.";
+    "Tu llamada anterior a `emit_plan` falló validación semántica. Corrige los errores listados y vuelve a llamar a la herramienta.";
   const detail = entry.error_message ?? "";
-  const raw = typeof rawOutput === "string" ? rawOutput.slice(0, 2000) : "";
-  return `${hint}\n\nErrors:\n${detail}\n\n${raw ? `Your previous output (truncated):\n${raw}\n` : ""}`;
+  // `priorInput` is the tool_use `input` object — serialize for the hint.
+  // Wrap in <previous_output> so the model treats it as untrusted data, not instructions.
+  const serialized = priorInput != null ? JSON.stringify(priorInput).slice(0, 4000) : "";
+  const wrapped = serialized
+    ? `\n\n<previous_output>\n${serialized}\n</previous_output>\n`
+    : "";
+  return `${hint}\n\nErrores:\n${detail}${wrapped}`;
 }
 
 type OneAttemptInput = {
@@ -152,6 +165,7 @@ type OneAttemptInput = {
   model: string;
   maxTokens: number;
   timeoutMs: number;
+  inputSchema: Anthropic.Messages.Tool.InputSchema;
   attemptNumber: 1 | 2;
 };
 
@@ -173,15 +187,24 @@ async function runOneAttempt(input: OneAttemptInput): Promise<OneAttemptResult> 
   };
 
   try {
-    // Use streaming internally (NOT to the client) for resilience on slow Opus
-    // responses. Without streaming, a 60-120s silent wait can trip platform
-    // idle-timeouts or feel dead; with streaming the connection stays active
-    // as tokens arrive. `finalMessage()` assembles the full response at the end.
+    // Streaming stays active for slow Opus responses (60-120s); `finalMessage()`
+    // assembles the full response at the end. tool_choice forces the model to
+    // emit exactly one `emit_plan` tool_use block, which the SDK returns as a
+    // typed object in `input`.
     const stream = input.anthropic.messages.stream({
       model: input.model,
       max_tokens: input.maxTokens,
       system: input.systemPrompt,
       messages: [{ role: "user", content: input.userPrompt }],
+      tools: [
+        {
+          name: PLAN_TOOL_NAME,
+          description:
+            "Emite el proyecto ABP generado como datos estructurados. Respeta las longitudes y enums del esquema.",
+          input_schema: input.inputSchema,
+        },
+      ],
+      tool_choice: { type: "tool", name: PLAN_TOOL_NAME },
     });
     const response = await withTimeout(stream.finalMessage(), input.timeoutMs);
 
@@ -189,23 +212,18 @@ async function runOneAttempt(input: OneAttemptInput): Promise<OneAttemptResult> 
     entry.tokens_input = response.usage?.input_tokens ?? null;
     entry.tokens_output = response.usage?.output_tokens ?? null;
 
-    const textBlock = response.content.find((block) => block.type === "text");
-    if (!textBlock || textBlock.type !== "text") {
-      entry.error_message = "Anthropic returned no text block";
+    const toolUseBlock = response.content.find(
+      (block): block is Anthropic.Messages.ToolUseBlock => block.type === "tool_use",
+    );
+    if (!toolUseBlock || toolUseBlock.name !== PLAN_TOOL_NAME) {
+      entry.error_message = `Anthropic did not emit the expected tool call (${PLAN_TOOL_NAME})`;
       return { entry, raw: null };
     }
 
-    const text = textBlock.text.trim();
-    entry.raw_output = text;
-
-    const parsed = extractJsonObject(text);
-    if (parsed === null) {
-      entry.error_message = "Response did not contain a JSON object";
-      return { entry, raw: null };
-    }
-
+    // Store a stringified copy for audit/log purposes.
+    entry.raw_output = safeStringify(toolUseBlock.input);
     entry.status = "success";
-    return { entry, raw: parsed };
+    return { entry, raw: toolUseBlock.input };
   } catch (err) {
     entry.latency_ms = Date.now() - start;
     if (err instanceof TimeoutError) {
@@ -222,14 +240,11 @@ async function runOneAttempt(input: OneAttemptInput): Promise<OneAttemptResult> 
   }
 }
 
-function extractJsonObject(text: string): unknown {
-  const start = text.indexOf("{");
-  const end = text.lastIndexOf("}");
-  if (start === -1 || end === -1 || end <= start) return null;
+function safeStringify(value: unknown): string {
   try {
-    return JSON.parse(text.slice(start, end + 1));
+    return JSON.stringify(value);
   } catch {
-    return null;
+    return "[unstringifiable tool input]";
   }
 }
 

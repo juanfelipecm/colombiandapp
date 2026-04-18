@@ -1,7 +1,10 @@
+import type Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
+import { zodToJsonSchema } from "zod-to-json-schema";
 
 export const PROMPT_VERSION = "pbl-v1";
 export const PROMPT_MODEL = "claude-opus-4-7";
+export const PLAN_TOOL_NAME = "emit_plan";
 
 const dbaTokenSchema = z.string().regex(/^D\d+$/, "DBA token must match D<number>");
 const materiaIdSchema = z.string().uuid();
@@ -97,3 +100,24 @@ export function buildPlanSchema(selectedGrados: number[]) {
 }
 
 export type PlanSchema = ReturnType<typeof buildPlanSchema>;
+
+/**
+ * Build the JSON Schema that Anthropic uses as the tool's `input_schema`.
+ * Derived from `buildPlanSchema` so Zod stays the single source of truth.
+ *
+ * `target: "openApi3"` emits a root-object JSON Schema (no top-level $ref wrapper)
+ * that Anthropic's tool_use accepts directly. The only post-processing needed is
+ * stripping schema-metadata keys Anthropic doesn't want.
+ */
+export function buildPlanJsonSchema(
+  selectedGrados: number[],
+): Anthropic.Messages.Tool.InputSchema {
+  const zod = buildPlanSchema(selectedGrados);
+  const raw = zodToJsonSchema(zod, { target: "openApi3" }) as Record<string, unknown>;
+  delete raw.$schema;
+  delete raw.definitions;
+  if (raw.type !== "object") {
+    throw new Error("buildPlanJsonSchema: expected root type 'object'");
+  }
+  return raw as Anthropic.Messages.Tool.InputSchema;
+}

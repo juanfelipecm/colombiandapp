@@ -7,8 +7,8 @@ import { AnthropicError, PlanValidationError } from "@/lib/ai/errors";
 const MATERIA_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
 const DBA_ID = "11111111-1111-1111-1111-111111111111";
 
-function validPlanJson(): string {
-  return JSON.stringify({
+function validPlan(): Record<string, unknown> {
+  return {
     titulo: "Proyecto de la quebrada",
     pregunta_guia: "¿Qué nos enseña la quebrada sobre el agua?",
     producto_final: "Un mural colectivo con observaciones del agua.",
@@ -54,11 +54,10 @@ function validPlanJson(): string {
         },
       },
     ],
-  });
+  };
 }
 
 function fakeSupabase(): SupabaseClient {
-  // Mimics the chained builder enough to return the single DBA we need.
   const rows = [
     {
       id: DBA_ID,
@@ -71,9 +70,8 @@ function fakeSupabase(): SupabaseClient {
     },
   ];
 
-  const builder: Record<string, (...args: unknown[]) => unknown> = {};
   const final = { data: rows, error: null };
-  const chainable = { ...builder, then: undefined } as unknown as {
+  const chainable = {} as {
     select: () => typeof chainable;
     in: () => typeof chainable;
     order: () => typeof chainable;
@@ -82,33 +80,59 @@ function fakeSupabase(): SupabaseClient {
   chainable.select = () => chainable;
   chainable.in = () => chainable;
   chainable.order = () => chainable;
-  // Make it thenable so `await builder` resolves the rows
   chainable.then = (resolve) => resolve(final);
 
-  const client = {
+  return {
     from: () => chainable,
   } as unknown as SupabaseClient;
-
-  return client;
 }
 
-function fakeAnthropic(replies: string[]) {
-  // Production calls `anthropic.messages.stream(...).finalMessage()`; mock that shape.
+type ToolUseReply = { type: "tool_use"; input: unknown; name?: string };
+type TextReply = { type: "text"; text: string };
+type Reply = ToolUseReply | TextReply | "empty";
+
+/**
+ * Mock Anthropic that returns a sequence of responses. Each `Reply` becomes
+ * one `stream().finalMessage()` call. Tool-use replies wrap into a single
+ * tool_use content block shaped like the real SDK.
+ */
+function fakeAnthropic(replies: Reply[]) {
   let call = 0;
-  return {
-    messages: {
-      stream: vi.fn(() => {
-        const text = replies[call] ?? replies[replies.length - 1];
-        call += 1;
-        return {
-          finalMessage: async () => ({
-            content: [{ type: "text", text }],
+  const stream = vi.fn(() => {
+    const reply = replies[call] ?? replies[replies.length - 1];
+    call += 1;
+    return {
+      finalMessage: async () => {
+        if (reply === "empty") {
+          return {
+            content: [],
+            usage: { input_tokens: 0, output_tokens: 0 },
+          };
+        }
+        if (reply.type === "text") {
+          return {
+            content: [{ type: "text", text: reply.text }],
             usage: { input_tokens: 1000, output_tokens: 2000 },
-          }),
+          };
+        }
+        return {
+          content: [
+            {
+              type: "tool_use",
+              id: `tool_${call}`,
+              name: reply.name ?? "emit_plan",
+              input: reply.input,
+            },
+          ],
+          usage: { input_tokens: 1000, output_tokens: 2000 },
         };
-      }),
-    },
-  } as unknown as import("@anthropic-ai/sdk").default;
+      },
+    };
+  });
+  return {
+    messages: { stream },
+    _stream: stream,
+  } as unknown as import("@anthropic-ai/sdk").default & { _stream: typeof stream };
 }
 
 const baseInputs = {
@@ -120,9 +144,9 @@ const baseInputs = {
 };
 
 describe("generateProject", () => {
-  it("succeeds on first attempt with valid JSON", async () => {
+  it("succeeds on first attempt with a valid tool_use", async () => {
     const supabase = fakeSupabase();
-    const anthropic = fakeAnthropic([validPlanJson()]);
+    const anthropic = fakeAnthropic([{ type: "tool_use", input: validPlan() }]);
     const result = await generateProject(baseInputs, { supabase, anthropic });
 
     expect(result.plan.titulo).toContain("quebrada");
@@ -133,10 +157,23 @@ describe("generateProject", () => {
     expect(result.attempts[0].tokens_output).toBe(2000);
   });
 
-  it("retries and succeeds on second attempt after validation failure", async () => {
+  it("retries and succeeds on second attempt after semantic validation failure", async () => {
     const supabase = fakeSupabase();
-    const badJson = JSON.stringify({ titulo: "incompleto" });
-    const anthropic = fakeAnthropic([badJson, validPlanJson()]);
+    // Attempt 1: structurally valid but semantically wrong (unknown DBA token).
+    const badPlan = {
+      ...validPlan(),
+      dba_targets: [
+        {
+          grado: 1,
+          materia_id: MATERIA_ID,
+          dbas: [{ dba_token: "D99", evidencia_index: 0 }], // unknown token
+        },
+      ],
+    };
+    const anthropic = fakeAnthropic([
+      { type: "tool_use", input: badPlan },
+      { type: "tool_use", input: validPlan() },
+    ]);
     const result = await generateProject(baseInputs, { supabase, anthropic });
 
     expect(result.plan.titulo).toContain("quebrada");
@@ -147,29 +184,90 @@ describe("generateProject", () => {
 
   it("throws PlanValidationError when both attempts fail validation", async () => {
     const supabase = fakeSupabase();
-    const badJson = JSON.stringify({ titulo: "incompleto" });
-    const anthropic = fakeAnthropic([badJson, badJson]);
+    // Unknown DBA token — fails the semantic validator on both attempts.
+    const bad = {
+      ...validPlan(),
+      dba_targets: [
+        {
+          grado: 1,
+          materia_id: MATERIA_ID,
+          dbas: [{ dba_token: "D99", evidencia_index: 0 }],
+        },
+      ],
+    };
+    const anthropic = fakeAnthropic([
+      { type: "tool_use", input: bad },
+      { type: "tool_use", input: bad },
+    ]);
 
     await expect(generateProject(baseInputs, { supabase, anthropic })).rejects.toBeInstanceOf(
       PlanValidationError,
     );
   });
 
-  it("throws AnthropicError if the response contains no text block", async () => {
+  it("throws AnthropicError if the response omits the expected tool_use block", async () => {
     const supabase = fakeSupabase();
-    const anthropic = {
-      messages: {
-        stream: vi.fn(() => ({
-          finalMessage: async () => ({
-            content: [],
-            usage: { input_tokens: 0, output_tokens: 0 },
-          }),
-        })),
-      },
-    } as unknown as import("@anthropic-ai/sdk").default;
+    const anthropic = fakeAnthropic([{ type: "text", text: "oops I wrote prose" }]);
 
     await expect(generateProject(baseInputs, { supabase, anthropic })).rejects.toBeInstanceOf(
       AnthropicError,
     );
+  });
+
+  it("throws AnthropicError if the response is empty", async () => {
+    const supabase = fakeSupabase();
+    const anthropic = fakeAnthropic(["empty"]);
+
+    await expect(generateProject(baseInputs, { supabase, anthropic })).rejects.toBeInstanceOf(
+      AnthropicError,
+    );
+  });
+
+  it("forces tool_choice and passes the generated input_schema to Anthropic", async () => {
+    const supabase = fakeSupabase();
+    const anthropic = fakeAnthropic([{ type: "tool_use", input: validPlan() }]);
+    await generateProject(baseInputs, { supabase, anthropic });
+
+    const anth = anthropic as unknown as { _stream: ReturnType<typeof vi.fn> };
+    const args = anth._stream.mock.calls[0][0] as {
+      tools: Array<{ name: string; input_schema: Record<string, unknown> }>;
+      tool_choice: { type: string; name: string };
+    };
+    expect(args.tool_choice).toEqual({ type: "tool", name: "emit_plan" });
+    expect(args.tools).toHaveLength(1);
+    expect(args.tools[0].name).toBe("emit_plan");
+    expect(args.tools[0].input_schema.type).toBe("object");
+    // Grade enum must include the selected grade in the actividades schema.
+    const fases = (args.tools[0].input_schema.properties as Record<string, unknown>).fases;
+    expect(fases).toBeDefined();
+  });
+
+  it("wraps the prior tool input in <previous_output> tags on retry", async () => {
+    const supabase = fakeSupabase();
+    const bad = {
+      ...validPlan(),
+      dba_targets: [
+        {
+          grado: 1,
+          materia_id: MATERIA_ID,
+          dbas: [{ dba_token: "D99", evidencia_index: 0 }],
+        },
+      ],
+    };
+    const anthropic = fakeAnthropic([
+      { type: "tool_use", input: bad },
+      { type: "tool_use", input: validPlan() },
+    ]);
+    await generateProject(baseInputs, { supabase, anthropic });
+
+    const anth = anthropic as unknown as { _stream: ReturnType<typeof vi.fn> };
+    const retryCall = anth._stream.mock.calls[1][0] as {
+      messages: Array<{ role: string; content: string }>;
+    };
+    const retryUserPrompt = retryCall.messages[0].content;
+    expect(retryUserPrompt).toContain("<previous_output>");
+    expect(retryUserPrompt).toContain("</previous_output>");
+    // Should include the serialized bad input so the model sees what to fix.
+    expect(retryUserPrompt).toContain("D99");
   });
 });

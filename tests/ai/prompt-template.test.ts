@@ -140,4 +140,32 @@ describe("buildUserPrompt", () => {
     );
     expect(text).toMatch(/inglés.*null/i);
   });
+
+  it("does NOT embed a JSON schema block (tool use enforces shape, not text)", () => {
+    const text = buildUserPrompt(
+      {
+        grados: [1, 5],
+        materia_ids: [matLenguaje],
+        studentCountsByGrade: { 1: 3, 5: 2 },
+        duracion_semanas: 1,
+        tema_contexto: null,
+      },
+      ctx,
+    );
+    expect(text).not.toContain("```json");
+    expect(text).not.toContain('"titulo": "string');
+    expect(text).not.toContain('"actividades": {');
+    // Still references emit_plan so the model knows the target tool.
+    expect(text.toLowerCase()).toContain("emit_plan");
+  });
+});
+
+describe("SYSTEM_PROMPT tool use", () => {
+  it("instructs the model to call the emit_plan tool", () => {
+    expect(SYSTEM_PROMPT).toContain("emit_plan");
+  });
+
+  it("warns against prompt injection in <previous_output> tags", () => {
+    expect(SYSTEM_PROMPT).toContain("<previous_output>");
+  });
 });
