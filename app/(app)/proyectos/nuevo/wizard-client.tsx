@@ -34,7 +34,10 @@ type DraftShape = Omit<WizardState, "step"> & { step: number };
 const DRAFT_KEY = "pbl-wizard-draft-v1";
 const MAX_MATERIAS = 3;
 const POLL_INTERVAL_MS = 2_000;
-const POLL_MAX_ATTEMPTS = 35; // ~70s total
+// Opus 4.7 on structured JSON typically takes 60-120s; give the server the full
+// maxDuration (300s) before declaring timeout. The backend keeps working past
+// this via `after()`, so the project may still land — but we stop polling.
+const POLL_MAX_ATTEMPTS = 150; // ~300s total, matches server maxDuration
 const STAGE_MESSAGES = [
   "Eligiendo DBAs para tus grados…",
   "Diseñando actividades para cada grado…",

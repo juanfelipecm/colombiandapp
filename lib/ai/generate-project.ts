@@ -25,7 +25,10 @@ export type GenerateResult = {
 };
 
 const DEFAULT_MAX_TOKENS = 16000;
-const DEFAULT_TIMEOUT_MS = 50_000;
+// 3 minutes. Opus 4.7 can take 60-120s on complex structured JSON; 50s was too
+// tight and produced api_error timeouts on normal-sized inputs. The Vercel
+// platform timeout is the real ceiling (see maxDuration on the route).
+const DEFAULT_TIMEOUT_MS = 180_000;
 
 export type GenerateDeps = {
   supabase: SupabaseClient;
@@ -170,15 +173,17 @@ async function runOneAttempt(input: OneAttemptInput): Promise<OneAttemptResult> 
   };
 
   try {
-    const response = await withTimeout(
-      input.anthropic.messages.create({
-        model: input.model,
-        max_tokens: input.maxTokens,
-        system: input.systemPrompt,
-        messages: [{ role: "user", content: input.userPrompt }],
-      }),
-      input.timeoutMs,
-    );
+    // Use streaming internally (NOT to the client) for resilience on slow Opus
+    // responses. Without streaming, a 60-120s silent wait can trip platform
+    // idle-timeouts or feel dead; with streaming the connection stays active
+    // as tokens arrive. `finalMessage()` assembles the full response at the end.
+    const stream = input.anthropic.messages.stream({
+      model: input.model,
+      max_tokens: input.maxTokens,
+      system: input.systemPrompt,
+      messages: [{ role: "user", content: input.userPrompt }],
+    });
+    const response = await withTimeout(stream.finalMessage(), input.timeoutMs);
 
     entry.latency_ms = Date.now() - start;
     entry.tokens_input = response.usage?.input_tokens ?? null;

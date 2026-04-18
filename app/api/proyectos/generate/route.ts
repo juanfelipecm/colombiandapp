@@ -1,7 +1,7 @@
 import { after, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient as createServerSupabase } from "@/lib/supabase/server";
-import { generateProject } from "@/lib/ai/generate-project";
+import { generateProject, type GenerateAttempt } from "@/lib/ai/generate-project";
 import { AnthropicError, PlanValidationError } from "@/lib/ai/errors";
 import type { WizardInputs } from "@/lib/ai/prompt-template";
 import type { GeneratedPlan } from "@/lib/ai/plan-schema";
@@ -15,7 +15,10 @@ import {
 } from "@/lib/api/pbl-gate";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+// Gives the after() callback room to call Anthropic (up to ~180s) + run the
+// RPC + update the log row. Vercel Hobby caps at 60s regardless; Pro = 300s;
+// Pro+ = 800s. Local dev (`npm run dev`) ignores this value.
+export const maxDuration = 300;
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -258,13 +261,68 @@ async function runGeneration(ctx: RunInputs): Promise<void> {
           ? "timeout"
           : "api_error";
 
-    const message = err instanceof Error ? err.message : String(err);
+    // Extract per-attempt data (attached as .cause by the orchestrator) so we
+    // can persist tokens/latency + raw output for debugging.
+    const attempts = extractAttempts(err);
+    const finalAttempt = attempts.length > 0 ? attempts[attempts.length - 1] : null;
+
+    // Build a rich error message: include structured issues when present,
+    // otherwise fall back to the Error.message.
+    const errorMessage =
+      err instanceof PlanValidationError
+        ? `${err.message}: ${err.issues.map((i) => JSON.stringify(i)).join("; ")}`
+        : err instanceof Error
+          ? err.message
+          : String(err);
+
+    // Persist the raw model output so we can see what Claude emitted.
+    const rawOutput =
+      err instanceof PlanValidationError && err.rawOutput
+        ? { raw: err.rawOutput }
+        : finalAttempt?.raw_output
+          ? { raw: finalAttempt.raw_output }
+          : null;
 
     await admin
       .from("project_generation_logs")
-      .update({ status, error_message: message })
+      .update({
+        status,
+        error_message: errorMessage,
+        raw_output_jsonb: rawOutput,
+        tokens_input: finalAttempt?.tokens_input ?? null,
+        tokens_output: finalAttempt?.tokens_output ?? null,
+        latency_ms: finalAttempt?.latency_ms ?? null,
+        attempt_number: attempts.length === 2 ? 2 : 1,
+      })
       .eq("id", generationId);
+
+    // If the orchestrator retried, also record attempt 1 as its own log row.
+    if (attempts.length > 1) {
+      const firstAttempt = attempts[0];
+      await admin.from("project_generation_logs").insert({
+        project_id: null,
+        teacher_id: teacherId,
+        idempotency_key: idempotencyKey,
+        attempt_number: 1,
+        parent_attempt_id: null,
+        status: firstAttempt.status,
+        prompt_version: "pbl-v1",
+        model: "claude-opus-4-7",
+        inputs_jsonb: inputs,
+        raw_output_jsonb: firstAttempt.raw_output ? { raw: firstAttempt.raw_output } : null,
+        tokens_input: firstAttempt.tokens_input,
+        tokens_output: firstAttempt.tokens_output,
+        latency_ms: firstAttempt.latency_ms,
+        error_message: firstAttempt.error_message,
+      });
+    }
   }
+}
+
+function extractAttempts(err: unknown): GenerateAttempt[] {
+  if (!(err instanceof Error)) return [];
+  const cause = (err as Error & { cause?: unknown }).cause;
+  return Array.isArray(cause) ? (cause as GenerateAttempt[]) : [];
 }
 
 type BuildRpcArgs = {

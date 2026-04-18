@@ -93,16 +93,18 @@ function fakeSupabase(): SupabaseClient {
 }
 
 function fakeAnthropic(replies: string[]) {
-  // Build a minimal shape that matches Anthropic.messages.create resolution.
+  // Production calls `anthropic.messages.stream(...).finalMessage()`; mock that shape.
   let call = 0;
   return {
     messages: {
-      create: vi.fn(async () => {
+      stream: vi.fn(() => {
         const text = replies[call] ?? replies[replies.length - 1];
         call += 1;
         return {
-          content: [{ type: "text", text }],
-          usage: { input_tokens: 1000, output_tokens: 2000 },
+          finalMessage: async () => ({
+            content: [{ type: "text", text }],
+            usage: { input_tokens: 1000, output_tokens: 2000 },
+          }),
         };
       }),
     },
@@ -157,7 +159,12 @@ describe("generateProject", () => {
     const supabase = fakeSupabase();
     const anthropic = {
       messages: {
-        create: vi.fn(async () => ({ content: [], usage: { input_tokens: 0, output_tokens: 0 } })),
+        stream: vi.fn(() => ({
+          finalMessage: async () => ({
+            content: [],
+            usage: { input_tokens: 0, output_tokens: 0 },
+          }),
+        })),
       },
     } as unknown as import("@anthropic-ai/sdk").default;
 
