@@ -43,3 +43,16 @@ next-env.d.ts
 
 # DBA ingestion source PDFs (publicly available at colombiaaprende.edu.co)
 /data/dba-source/
+
+# Playwright runtime artifacts
+/test-results/
+/playwright-report/
+
+# Supabase CLI local state (runs in Docker)
+/supabase/.branches/
+/supabase/.temp/
+
+# Prompt eval harness generated outputs (re-generated per prompt_version)
+/scripts/pbl/fixtures/*.output.json
+/scripts/pbl/fixtures/*.output.md
+/scripts/pbl/fixtures/*.rating.yaml

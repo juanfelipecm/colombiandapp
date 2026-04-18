@@ -1,0 +1,11 @@
+{
+  "name": "single-grade-3",
+  "description": "Caso degenerado: un solo grado. Valida que el prompt no colapse cuando no hay multigrado.",
+  "grados": [3],
+  "materiaSlugs": ["lenguaje", "matematicas"],
+  "studentCountsByGrade": {
+    "3": 8
+  },
+  "duracion_semanas": 1,
+  "tema_contexto": ""
+}

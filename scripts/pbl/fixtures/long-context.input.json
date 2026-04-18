@@ -1,0 +1,15 @@
+{
+  "name": "long-context",
+  "description": "Contexto rico y largo, 5 grados × 2 materias × 1 semana. Valida que el prompt respete detalles locales sin desviar scope.",
+  "grados": [1, 2, 3, 4, 5],
+  "materiaSlugs": ["lenguaje", "ciencias_naturales"],
+  "studentCountsByGrade": {
+    "1": 3,
+    "2": 3,
+    "3": 2,
+    "4": 3,
+    "5": 3
+  },
+  "duracion_semanas": 1,
+  "tema_contexto": "Vivimos en una vereda donde la gente cultiva café, plátano y maíz. Hay un río pequeño y varias quebradas que bajan del cerro. El abuelo de varios niños fue jornalero y sabe historias sobre los cultivos y el agua. Recientemente hubo una temporada seca y muchas fuentes de agua se vieron reducidas. Los niños han comentado que el agua de la llave a veces huele distinto. Quiero que el proyecto conecte con este contexto y ayude a los niños a pensar en el agua de su comunidad, sus cultivos y sus historias familiares."
+}

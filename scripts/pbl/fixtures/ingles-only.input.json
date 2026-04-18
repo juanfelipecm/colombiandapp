@@ -1,0 +1,13 @@
+{
+  "name": "ingles-only",
+  "description": "Caso de solo Inglés: los DBAs de Inglés no tienen evidencias numeradas; valida el branch de evidencia_index null.",
+  "grados": [2, 3, 4],
+  "materiaSlugs": ["ingles"],
+  "studentCountsByGrade": {
+    "2": 3,
+    "3": 3,
+    "4": 3
+  },
+  "duracion_semanas": 1,
+  "tema_contexto": "nuestras fiestas locales y las comidas típicas"
+}

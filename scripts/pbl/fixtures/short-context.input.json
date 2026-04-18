@@ -1,0 +1,15 @@
+{
+  "name": "short-context",
+  "description": "5 grados × 3 materias × 2 semanas con contexto vacío. Estrés máximo de diferenciación sin pista temática.",
+  "grados": [1, 2, 3, 4, 5],
+  "materiaSlugs": ["lenguaje", "ciencias_naturales", "ciencias_sociales"],
+  "studentCountsByGrade": {
+    "1": 2,
+    "2": 2,
+    "3": 3,
+    "4": 2,
+    "5": 3
+  },
+  "duracion_semanas": 2,
+  "tema_contexto": ""
+}

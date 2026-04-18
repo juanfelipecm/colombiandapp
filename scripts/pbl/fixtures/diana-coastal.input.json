@@ -1,0 +1,15 @@
+{
+  "name": "diana-coastal",
+  "description": "Diana Molina en Sucre (costa), 5 grados, 1 semana, Lenguaje + Ciencias Naturales, tema del agua de la quebrada",
+  "grados": [1, 2, 3, 4, 5],
+  "materiaSlugs": ["lenguaje", "ciencias_naturales"],
+  "studentCountsByGrade": {
+    "1": 3,
+    "2": 3,
+    "3": 3,
+    "4": 2,
+    "5": 3
+  },
+  "duracion_semanas": 1,
+  "tema_contexto": "el agua de la quebrada que pasa cerca de nuestra escuela"
+}

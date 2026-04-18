@@ -1,0 +1,14 @@
+{
+  "name": "paramo-ecosystem",
+  "description": "Maestra en zona de páramo (Boyacá/Cundinamarca), 4 grados, 2 semanas, tres materias, tema del ecosistema de páramo",
+  "grados": [2, 3, 4, 5],
+  "materiaSlugs": ["ciencias_naturales", "ciencias_sociales", "matematicas"],
+  "studentCountsByGrade": {
+    "2": 4,
+    "3": 3,
+    "4": 2,
+    "5": 3
+  },
+  "duracion_semanas": 2,
+  "tema_contexto": "el páramo que está cerca de nuestra escuela, los frailejones y las plantas que crecen ahí"
+}

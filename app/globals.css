@@ -73,3 +73,53 @@ body {
 .flag-bar-yellow { flex: 2; background: var(--brand-yellow); }
 .flag-bar-blue { flex: 1; background: var(--brand-blue); }
 .flag-bar-red { flex: 1; background: var(--brand-red); }
+
+/* =========================================================================
+ * Print styles — used by the project view's "Imprimir / Guardar PDF" button
+ * (calls window.print()). Hides app chrome and compresses the layout to fit
+ * 1-2 A4 pages for a 1-week project.
+ * ========================================================================= */
+@media print {
+  /* A4 margins */
+  @page { size: A4; margin: 15mm; }
+
+  /* Hide anything wrapped in .no-print (bottom nav, back button, action bar,
+     status transition buttons, feedback prompt, archive button, etc.) */
+  .no-print { display: none !important; }
+
+  /* Hide app chrome rendered by (app)/layout.tsx */
+  .flag-bar { display: none !important; }
+  nav[aria-label="Navegación principal"] { display: none !important; }
+
+  /* Reset colors + remove shadows for ink-friendly output */
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 10pt;
+    line-height: 1.35;
+  }
+
+  /* Force container to full page width */
+  main > div { max-width: none !important; padding: 0 !important; }
+
+  /* Avoid page breaks inside phase cards + grade cards */
+  section,
+  .rounded-2xl { break-inside: avoid; page-break-inside: avoid; }
+
+  /* Collapse card borders slightly for denser print */
+  .rounded-2xl, .rounded-xl {
+    border-width: 1px !important;
+    border-color: #999 !important;
+    background: white !important;
+  }
+
+  /* Keep heading sizes readable but compressed */
+  h1 { font-size: 16pt !important; }
+  h2 { font-size: 12pt !important; }
+
+  /* Kill button styling (for any button that leaks through) */
+  button { background: transparent !important; color: black !important; border-color: #999 !important; }
+
+  /* Ensure links don't print URL footnotes */
+  a[href]:after { content: "" !important; }
+}

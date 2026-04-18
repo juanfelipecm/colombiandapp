@@ -1,19 +1,21 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { Card } from "@/components/ui/card";
-import { GradeBadge } from "@/components/ui/badge";
-import { computeAge } from "@/lib/utils/age";
 import { BottomNav } from "@/components/ui/bottom-nav";
+import { ProjectCard, type ProjectCardData } from "@/components/ui/project-card";
 import { DashboardActions } from "./actions-client";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
   const { data: teacher } = await supabase
     .from("teachers")
-    .select("first_name, last_name")
+    .select("first_name")
     .eq("id", user.id)
     .single();
 
@@ -22,123 +24,128 @@ export default async function DashboardPage() {
 
   const { data: students } = await supabase
     .from("students")
-    .select("*")
-    .eq("school_id", school.id)
-    .order("grade", { ascending: true });
+    .select("id, grade")
+    .eq("school_id", school.id);
 
-  if (!students || students.length === 0) redirect("/onboarding/students");
+  const hasStudents = (students?.length ?? 0) > 0;
+
+  // Project counts + 3 most recent non-archived
+  const { count: projectCount } = await supabase
+    .from("projects")
+    .select("*", { head: true, count: "exact" })
+    .neq("status", "archivado");
+
+  const { data: recentProjectsRaw } = await supabase
+    .from("projects")
+    .select(
+      "id, titulo, duracion_semanas, status, created_at, project_grados(grado)",
+    )
+    .neq("status", "archivado")
+    .order("created_at", { ascending: false })
+    .limit(3);
+
+  type ProjectRow = {
+    id: string;
+    titulo: string;
+    duracion_semanas: number;
+    status: string;
+    created_at: string;
+    project_grados: Array<{ grado: number }>;
+  };
+
+  const recentProjects: ProjectCardData[] = ((recentProjectsRaw as ProjectRow[] | null) ?? []).map(
+    (p) => ({
+      id: p.id,
+      titulo: p.titulo,
+      duracion_semanas: p.duracion_semanas,
+      status: p.status as ProjectCardData["status"],
+      created_at: p.created_at,
+      grados: (p.project_grados ?? [])
+        .map((g) => g.grado)
+        .sort((a, b) => a - b),
+    }),
+  );
 
   const firstName = teacher?.first_name || "";
-  const uniqueGrades = [...new Set(students.map((s) => s.grade))].sort();
-
-  // Grade distribution
-  const gradeCounts: Record<number, number> = {};
-  students.forEach((s) => {
-    gradeCounts[s.grade] = (gradeCounts[s.grade] || 0) + 1;
-  });
+  const uniqueGrades = hasStudents ? [...new Set(students!.map((s) => s.grade))].sort() : [];
+  const studentCount = students?.length ?? 0;
 
   return (
     <div className="py-6">
-      {/* Welcome */}
-      <h2 className="text-lg font-bold">Hola, {firstName}!</h2>
-      <p className="mb-4 text-sm text-text-secondary">{school.name}, {school.department}</p>
+      {/* Warm greeting */}
+      <h1 className="text-xl font-bold">Hola, {firstName}.</h1>
+      <p className="mb-5 text-sm text-text-secondary">
+        {school.name}, {school.department}
+      </p>
 
       {/* Primary CTA */}
-      <Card highlight className="mb-4">
-        <div className="py-4 text-center">
-          <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-[#fff3d0] text-2xl">
-            &#9830;
+      {hasStudents ? (
+        <Card highlight className="mb-5">
+          <div className="py-2 text-center">
+            <h2 className="mb-1 text-lg font-bold">¿Creamos un proyecto para esta semana?</h2>
+            <p className="mb-4 text-sm text-text-secondary">
+              Diseñamos actividades adaptadas a cada grado.
+            </p>
+            <DashboardActions />
           </div>
-          <h3 className="mb-1 text-lg font-bold">Crea tu primer proyecto</h3>
-          <p className="mb-4 text-sm text-text-secondary">
-            Disena actividades adaptadas a cada estudiante
-          </p>
-          <DashboardActions />
-        </div>
-      </Card>
+        </Card>
+      ) : (
+        <Card className="mb-5">
+          <div className="py-2 text-center">
+            <h2 className="mb-1 text-lg font-bold">Antes de crear proyectos…</h2>
+            <p className="mb-4 text-sm text-text-secondary">
+              Agreguemos a tus estudiantes.
+            </p>
+            <Link
+              href="/onboarding/students"
+              className="inline-block rounded-xl bg-brand-blue px-5 py-3 text-sm font-semibold text-white"
+            >
+              Agregar estudiantes
+            </Link>
+          </div>
+        </Card>
+      )}
 
-      {/* Grade distribution */}
-      <Card className="mb-4">
-        <h3 className="mb-3 text-base font-semibold">Tu escuela en numeros</h3>
-        <div className="flex gap-3">
-          {uniqueGrades.map((grade) => (
-            <div key={grade} className="flex-1 text-center">
-              <div className="mb-1 flex justify-center gap-0.5">
-                {Array.from({ length: gradeCounts[grade] }).map((_, i) => (
-                  <GradeDot key={i} grade={grade} />
-                ))}
-              </div>
-              <p className="text-xs text-text-secondary">{grade}° grado</p>
-              <p className="text-xs text-text-placeholder">{gradeCounts[grade]} est.</p>
+      {/* One-line stats — replaces the earlier 3-card row per design review Issue 4B */}
+      {hasStudents ? (
+        <p className="mb-6 text-sm text-text-secondary">
+          <strong className="text-text-primary">{studentCount}</strong> estudiante
+          {studentCount === 1 ? "" : "s"} ·{" "}
+          <strong className="text-text-primary">{uniqueGrades.length}</strong> grado
+          {uniqueGrades.length === 1 ? "" : "s"} ·{" "}
+          <strong className="text-text-primary">{projectCount ?? 0}</strong> proyecto
+          {(projectCount ?? 0) === 1 ? "" : "s"}
+        </p>
+      ) : null}
+
+      {/* Mis proyectos — 3 most recent */}
+      {hasStudents ? (
+        <section className="mb-6">
+          <div className="mb-3 flex items-baseline justify-between">
+            <h2 className="text-base font-semibold">Mis proyectos</h2>
+            {(projectCount ?? 0) > 3 ? (
+              <Link href="/proyectos" className="text-xs font-medium text-brand-blue">
+                Ver todos
+              </Link>
+            ) : null}
+          </div>
+          {recentProjects.length > 0 ? (
+            <div className="space-y-2">
+              {recentProjects.map((p) => (
+                <ProjectCard key={p.id} project={p} />
+              ))}
             </div>
-          ))}
-        </div>
-      </Card>
-
-      {/* Stats */}
-      <div className="mb-4 flex gap-3">
-        <StatBox value={students.length} label="Estudiantes" color="text-brand-blue" />
-        <StatBox value={uniqueGrades.length} label="Grados" color="text-brand-yellow" />
-        <StatBox value={0} label="Proyectos" color="text-brand-red" />
-      </div>
-
-      {/* Student quick view */}
-      <div className="mb-4">
-        <h3 className="mb-3 text-base font-semibold">Mis estudiantes</h3>
-        <div className="flex gap-3 overflow-x-auto pb-2">
-          {students.map((student) => (
-            <div key={student.id} className="flex flex-shrink-0 flex-col items-center">
-              <StudentAvatar firstName={student.first_name} lastName={student.last_name} grade={student.grade} />
-              <p className="mt-1 text-[11px]">{student.first_name}</p>
-              <p className="text-[10px] text-text-placeholder">{computeAge(student.birth_date)} anos</p>
+          ) : (
+            <div className="rounded-2xl border border-dashed border-border bg-input-bg p-5 text-center">
+              <p className="text-sm text-text-secondary">
+                Aún no has creado proyectos. Empecemos con el primero.
+              </p>
             </div>
-          ))}
-        </div>
-      </div>
+          )}
+        </section>
+      ) : null}
 
       <BottomNav />
-    </div>
-  );
-}
-
-function StatBox({ value, label, color }: { value: number; label: string; color: string }) {
-  return (
-    <div className="flex-1 rounded-xl bg-input-bg p-3 text-center">
-      <p className={`text-2xl font-bold ${color}`}>{value}</p>
-      <p className="text-[11px] text-text-secondary">{label}</p>
-    </div>
-  );
-}
-
-function GradeDot({ grade }: { grade: number }) {
-  const colors: Record<number, string> = {
-    1: "bg-brand-yellow",
-    2: "bg-brand-blue",
-    3: "bg-brand-red",
-    4: "bg-brand-teal",
-    5: "bg-brand-green",
-  };
-  return <div className={`h-3 w-3 rounded-full ${colors[grade] || "bg-border"}`} />;
-}
-
-function StudentAvatar({ firstName, lastName, grade }: { firstName: string; lastName: string; grade: number }) {
-  const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
-
-  const bgColors: Record<number, string> = {
-    1: "bg-[var(--grade-1-bg)]",
-    2: "bg-[var(--grade-2-bg)]",
-    3: "bg-[var(--grade-3-bg)]",
-    4: "bg-[var(--grade-4-bg)]",
-    5: "bg-[var(--grade-5-bg)]",
-  };
-
-  return (
-    <div
-      className={`flex h-11 w-11 items-center justify-center rounded-full text-[13px] font-semibold text-text-secondary ${
-        bgColors[grade] || "bg-border"
-      }`}
-    >
-      {initials}
     </div>
   );
 }

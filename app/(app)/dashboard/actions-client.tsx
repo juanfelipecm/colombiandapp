@@ -1,16 +1,16 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Toast, useToast } from "@/components/ui/toast";
 
 export function DashboardActions() {
-  const { toast, show, dismiss } = useToast();
+  const router = useRouter();
 
   return (
     <>
       <Button
         variant="accent"
-        onClick={() => show("Proximamente — estamos construyendo esta funcionalidad.")}
+        onClick={() => router.push("/proyectos/nuevo")}
       >
         + Nuevo proyecto
       </Button>
@@ -18,8 +18,6 @@ export function DashboardActions() {
       <div className="mt-4">
         <WhatsAppShare />
       </div>
-
-      <Toast message={toast.message} visible={toast.visible} onDismiss={dismiss} />
     </>
   );
 }
