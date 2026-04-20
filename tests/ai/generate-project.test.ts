@@ -254,13 +254,23 @@ describe("generateProject", () => {
     expect(result.attempts[0].status).toBe("success");
   });
 
-  it("does NOT unwrap when the top-level object has an 'input' key but is not a plan", async () => {
+  it("unwraps { plan: <plan> } when Opus wraps under a 'plan' key", async () => {
     const supabase = fakeSupabase();
-    // Shouldn't trigger the unwrap — no plan keys inside. Lands as a validation failure instead.
-    const spurious = { input: { foo: "bar" } };
+    const wrapped = { plan: validPlan() };
+    const anthropic = fakeAnthropic([{ type: "tool_use", input: wrapped }]);
+    const result = await generateProject(baseInputs, { supabase, anthropic });
+
+    expect(result.plan.titulo).toContain("quebrada");
+    expect(result.attempts[0].status).toBe("success");
+  });
+
+  it("does NOT unwrap when the single-key wrapper's inner object is not a plan", async () => {
+    const supabase = fakeSupabase();
+    const spuriousInput = { input: { foo: "bar" } };
+    const spuriousPlan = { plan: { foo: "bar" } };
     const anthropic = fakeAnthropic([
-      { type: "tool_use", input: spurious },
-      { type: "tool_use", input: spurious },
+      { type: "tool_use", input: spuriousInput },
+      { type: "tool_use", input: spuriousPlan },
     ]);
     await expect(generateProject(baseInputs, { supabase, anthropic })).rejects.toBeInstanceOf(
       PlanValidationError,

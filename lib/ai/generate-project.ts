@@ -220,11 +220,12 @@ async function runOneAttempt(input: OneAttemptInput): Promise<OneAttemptResult> 
       return { entry, raw: null };
     }
 
-    // Defensive unwrap: Opus 4.7 occasionally mirrors the tool_use wire format and
-    // emits its payload as `{ input: { ...actual plan... } }`. Zod then sees only
-    // `{input}` at the top and reports every required field as missing. When we
-    // detect a single `input` key wrapping the payload, unwrap it.
-    const toolInput = unwrapDoubleWrappedInput(toolUseBlock.input);
+    // Defensive unwrap: Opus 4.7 occasionally wraps its payload under a single
+    // intermediate key instead of emitting the flat shape requested by the
+    // tool's input_schema. Observed wrappers: `input` (mirrors the tool_use
+    // wire format) and `plan`. When the wrapped inner object looks like a
+    // plan, peel the wrapper so Zod sees the flat shape it expects.
+    const toolInput = unwrapSingleKeyWrapper(toolUseBlock.input);
 
     // Store a stringified copy for audit/log purposes.
     entry.raw_output = safeStringify(toolInput);
@@ -255,17 +256,18 @@ function safeStringify(value: unknown): string {
 }
 
 /**
- * If the tool input is shaped like `{ input: <obj> }` and the inner object
- * looks like a plan (has at least one of the top-level plan keys), peel the
- * wrapper. This defends against a known Opus 4.7 quirk where the model mirrors
- * the tool_use wire format inside its own payload.
+ * If the tool input is a single-key wrapper (observed keys: `input`, `plan`)
+ * around an inner object that looks like a plan (has at least one top-level
+ * plan key), peel the wrapper. The key-name is not checked — the `looksLikePlan`
+ * heuristic is the safety gate, and it's specific enough to avoid false
+ * positives.
  */
-function unwrapDoubleWrappedInput(value: unknown): unknown {
+function unwrapSingleKeyWrapper(value: unknown): unknown {
   if (!value || typeof value !== "object" || Array.isArray(value)) return value;
   const obj = value as Record<string, unknown>;
   const keys = Object.keys(obj);
-  if (keys.length !== 1 || keys[0] !== "input") return value;
-  const inner = obj.input;
+  if (keys.length !== 1) return value;
+  const inner = obj[keys[0]];
   if (!inner || typeof inner !== "object" || Array.isArray(inner)) return value;
   const innerObj = inner as Record<string, unknown>;
   const planKeys = ["titulo", "pregunta_guia", "fases", "dba_targets"];

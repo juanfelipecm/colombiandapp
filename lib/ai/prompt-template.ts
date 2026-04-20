@@ -40,6 +40,7 @@ export const SYSTEM_PROMPT = [
   "",
   "**Formato de respuesta**",
   "Responde llamando a la herramienta `emit_plan` con los campos estructurados. No emitas texto libre — sólo la llamada a la herramienta.",
+  "Emite los campos (titulo, pregunta_guia, fases, etc.) directamente como argumentos de `emit_plan`. No los anides bajo una clave intermedia como `plan` o `input`.",
 ].join("\n");
 
 export function buildDbaReference(ctx: DbaContext, grados: number[], materiaIds: string[]): string {
