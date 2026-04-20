@@ -3,8 +3,12 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { BottomNav } from "@/components/ui/bottom-nav";
-import { ProjectCard, type ProjectCardData } from "@/components/ui/project-card";
+import { type ProjectCardData } from "@/components/ui/project-card";
 import { DashboardActions } from "./actions-client";
+import { InFlightGenerationCard, type InFlightGeneration } from "./in-flight-card";
+import { RecentProjectsClient } from "./recent-projects-client";
+
+const IN_FLIGHT_WINDOW_MS = 10 * 60 * 1000;
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -66,6 +70,36 @@ export default async function DashboardPage() {
     }),
   );
 
+  // Pending generations from the last 10 minutes. After that we assume the
+  // server died mid-after() and stop surfacing them as "en curso" — the row
+  // stays as-is for audit, but the teacher isn't left staring at a ghost.
+  // eslint-disable-next-line react-hooks/purity -- wall-clock cutoff is the whole point
+  const sinceIso = new Date(Date.now() - IN_FLIGHT_WINDOW_MS).toISOString();
+  const { data: inFlightRaw } = await supabase
+    .from("project_generation_logs")
+    .select("id, inputs_jsonb, created_at")
+    .eq("status", "pending")
+    .gte("created_at", sinceIso)
+    .order("created_at", { ascending: false });
+
+  type InFlightRow = {
+    id: string;
+    inputs_jsonb: {
+      grados?: number[];
+      materia_ids?: string[];
+      duracion_semanas?: number;
+    } | null;
+    created_at: string;
+  };
+
+  const inFlight: InFlightGeneration[] = ((inFlightRaw as InFlightRow[] | null) ?? []).map((r) => ({
+    id: r.id,
+    grados: (r.inputs_jsonb?.grados ?? []).slice().sort((a, b) => a - b),
+    materiaCount: r.inputs_jsonb?.materia_ids?.length ?? 0,
+    duracion: r.inputs_jsonb?.duracion_semanas ?? 1,
+    createdAt: r.created_at,
+  }));
+
   const firstName = teacher?.first_name || "";
   const uniqueGrades = hasStudents ? [...new Set(students!.map((s) => s.grade))].sort() : [];
   const studentCount = students?.length ?? 0;
@@ -77,6 +111,16 @@ export default async function DashboardPage() {
       <p className="mb-5 text-sm text-text-secondary">
         {school.name}, {school.department}
       </p>
+
+      {/* In-flight generations — shown first so an in-progress project is the
+          most obvious thing to pick up. */}
+      {inFlight.length > 0 ? (
+        <section className="mb-5 space-y-2">
+          {inFlight.map((g) => (
+            <InFlightGenerationCard key={g.id} generation={g} />
+          ))}
+        </section>
+      ) : null}
 
       {/* Primary CTA */}
       {hasStudents ? (
@@ -130,11 +174,7 @@ export default async function DashboardPage() {
             ) : null}
           </div>
           {recentProjects.length > 0 ? (
-            <div className="space-y-2">
-              {recentProjects.map((p) => (
-                <ProjectCard key={p.id} project={p} />
-              ))}
-            </div>
+            <RecentProjectsClient projects={recentProjects} />
           ) : (
             <div className="rounded-2xl border border-dashed border-border bg-input-bg p-5 text-center">
               <p className="text-sm text-text-secondary">

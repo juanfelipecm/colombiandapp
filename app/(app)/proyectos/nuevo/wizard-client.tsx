@@ -1,8 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  GENERATING_STAGE_INTERVAL_MS,
+  GENERATING_STAGE_MESSAGES,
+  GeneratingOverlay,
+} from "@/components/ui/generating-overlay";
 
 type Student = {
   id: string;
@@ -33,22 +38,10 @@ type DraftShape = Omit<WizardState, "step"> & { step: number };
 
 const DRAFT_KEY = "pbl-wizard-draft-v1";
 const MAX_MATERIAS = 3;
-const POLL_INTERVAL_MS = 2_000;
-// Opus 4.7 on structured JSON typically takes 60-120s; give the server the full
-// maxDuration (300s) before declaring timeout. The backend keeps working past
-// this via `after()`, so the project may still land — but we stop polling.
-const POLL_MAX_ATTEMPTS = 150; // ~300s total, matches server maxDuration
-const STAGE_MESSAGES = [
-  "Eligiendo DBAs para tus grados…",
-  "Diseñando actividades para cada grado…",
-  "Armando la lista de materiales…",
-  "Revisando que todo conecte…",
-];
-const STAGE_INTERVAL_MS = 4_000;
 
 type GenerationPhase =
   | { kind: "idle" }
-  | { kind: "generating"; generationId: string; stageIdx: number }
+  | { kind: "generating"; stageIdx: number }
   | { kind: "error"; message: string };
 
 export function WizardClient({
@@ -117,18 +110,23 @@ export function WizardClient({
   }, [state, hydrated]);
 
   // -------- Generation state --------
+  // Wizard only handles the POST + hand-off. Once the server has accepted the
+  // generation (202 with a generation_id), we navigate to the resume page,
+  // which owns polling and the overlay from that point on. The teacher sees no
+  // visual jump because the resume page renders the same GeneratingOverlay.
   const [genPhase, setGenPhase] = useState<GenerationPhase>({ kind: "idle" });
-  const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const stageTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const clearTimers = useCallback(() => {
-    if (pollTimerRef.current) clearInterval(pollTimerRef.current);
-    if (stageTimerRef.current) clearInterval(stageTimerRef.current);
-    pollTimerRef.current = null;
-    stageTimerRef.current = null;
-  }, []);
-
-  useEffect(() => () => clearTimers(), [clearTimers]);
+  useEffect(() => {
+    if (genPhase.kind !== "generating") return;
+    const timer = setInterval(() => {
+      setGenPhase((prev) =>
+        prev.kind === "generating"
+          ? { kind: "generating", stageIdx: (prev.stageIdx + 1) % GENERATING_STAGE_MESSAGES.length }
+          : prev,
+      );
+    }, GENERATING_STAGE_INTERVAL_MS);
+    return () => clearInterval(timer);
+  }, [genPhase.kind]);
 
   // -------- Handlers --------
   const toggleGrade = (g: number) => {
@@ -167,16 +165,7 @@ export function WizardClient({
     if (!step1Valid || !step2Valid) return;
 
     const idempotencyKey = crypto.randomUUID();
-    setGenPhase({ kind: "generating", generationId: "", stageIdx: 0 });
-
-    // Start staged copy
-    stageTimerRef.current = setInterval(() => {
-      setGenPhase((prev) =>
-        prev.kind === "generating"
-          ? { ...prev, stageIdx: (prev.stageIdx + 1) % STAGE_MESSAGES.length }
-          : prev,
-      );
-    }, STAGE_INTERVAL_MS);
+    setGenPhase({ kind: "generating", stageIdx: 0 });
 
     try {
       const res = await fetch("/api/proyectos/generate", {
@@ -203,7 +192,6 @@ export function WizardClient({
       };
 
       if (!res.ok) {
-        clearTimers();
         setGenPhase({
           kind: "error",
           message: body.message ?? "No pudimos crear el proyecto. Intenta de nuevo.",
@@ -211,15 +199,13 @@ export function WizardClient({
         return;
       }
 
-      // If the server already has a terminal state for this key, short-circuit.
+      // Same idempotency key already succeeded server-side — jump straight to the project.
       if (body.status === "success" && body.project_id) {
-        clearTimers();
         clearDraft();
-        router.push(`/proyectos/${body.project_id}`);
+        router.replace(`/proyectos/${body.project_id}`);
         return;
       }
       if (body.status && body.status !== "pending") {
-        clearTimers();
         setGenPhase({
           kind: "error",
           message:
@@ -229,65 +215,16 @@ export function WizardClient({
       }
 
       if (!body.generation_id) {
-        clearTimers();
-        setGenPhase({
-          kind: "error",
-          message: "Algo pasó, intenta de nuevo.",
-        });
+        setGenPhase({ kind: "error", message: "Algo pasó, intenta de nuevo." });
         return;
       }
 
-      setGenPhase((prev) =>
-        prev.kind === "generating" ? { ...prev, generationId: body.generation_id! } : prev,
-      );
-
-      // Begin polling
-      let attempts = 0;
-      pollTimerRef.current = setInterval(async () => {
-        attempts += 1;
-        try {
-          const r = await fetch(
-            `/api/proyectos/generations/${encodeURIComponent(body.generation_id!)}/status`,
-            { cache: "no-store" },
-          );
-          if (!r.ok) return; // keep polling on transient errors
-          const s = (await r.json()) as {
-            status?: string;
-            project_id?: string | null;
-            error?: string | null;
-          };
-
-          if (s.status === "success" && s.project_id) {
-            clearTimers();
-            clearDraft();
-            router.push(`/proyectos/${s.project_id}`);
-            return;
-          }
-
-          if (s.status && s.status !== "pending") {
-            clearTimers();
-            setGenPhase({
-              kind: "error",
-              message:
-                "No pudimos generar el proyecto. Tu información está guardada. Intenta de nuevo cuando haya mejor señal.",
-            });
-            return;
-          }
-
-          if (attempts >= POLL_MAX_ATTEMPTS) {
-            clearTimers();
-            setGenPhase({
-              kind: "error",
-              message:
-                "Esto está tardando más de lo normal. Intenta de nuevo en un momento.",
-            });
-          }
-        } catch {
-          // network blip — try again on next interval
-        }
-      }, POLL_INTERVAL_MS);
+      // Hand off to the resume page, which owns polling + overlay from here.
+      // Clear the draft now so a dashboard back-nav doesn't pre-fill the wizard
+      // with the same selections and invite a duplicate generation.
+      clearDraft();
+      router.replace(`/proyectos/generando/${body.generation_id}`);
     } catch (err) {
-      clearTimers();
       setGenPhase({
         kind: "error",
         message: err instanceof Error ? err.message : "Algo pasó, intenta de nuevo.",
@@ -600,27 +537,8 @@ function Step4Tema({
 }
 
 // -----------------------------------------------------------------------------
-// Generating overlay + error banner
+// Error banner
 // -----------------------------------------------------------------------------
-
-function GeneratingOverlay({ stageIdx }: { stageIdx: number }) {
-  return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center bg-background px-6 text-center">
-      <div className="flag-bar mb-8 w-full max-w-[320px]">
-        <div className="flag-bar-yellow" />
-        <div className="flag-bar-blue" />
-        <div className="flag-bar-red" />
-      </div>
-      <div className="mb-8 h-24 w-24 animate-pulse rounded-full bg-[var(--grade-1-bg)]" />
-      <p className="mb-3 min-h-[1.75rem] text-base font-medium text-text-primary">
-        {STAGE_MESSAGES[stageIdx]}
-      </p>
-      <p className="max-w-xs text-xs text-text-secondary">
-        Puedes cerrar la app. Volvemos a encontrar tu proyecto cuando regreses.
-      </p>
-    </div>
-  );
-}
 
 function ErrorBanner({
   message,
