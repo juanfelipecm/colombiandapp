@@ -603,32 +603,32 @@ export type Database = {
       }
       students: {
         Row: {
-          birth_date: string
+          birth_date: string | null
           created_at: string
           first_name: string
           grade: number
           id: string
-          last_name: string
+          last_name: string | null
           school_id: string
           updated_at: string
         }
         Insert: {
-          birth_date: string
+          birth_date?: string | null
           created_at?: string
           first_name: string
           grade: number
           id?: string
-          last_name: string
+          last_name?: string | null
           school_id: string
           updated_at?: string
         }
         Update: {
-          birth_date?: string
+          birth_date?: string | null
           created_at?: string
           first_name?: string
           grade?: number
           id?: string
-          last_name?: string
+          last_name?: string | null
           school_id?: string
           updated_at?: string
         }

@@ -12,7 +12,7 @@ export default async function StudentsPage() {
 
   const { data: students } = await supabase
     .from("students")
-    .select("*")
+    .select("id, first_name, grade")
     .eq("school_id", school.id)
     .order("created_at", { ascending: true });
 
