@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useFormStatus } from "react-dom";
 
 type ButtonVariant = "primary" | "secondary" | "destructive" | "ghost" | "active";
@@ -34,6 +35,21 @@ const depthStyles: Record<ButtonSize, string> = {
   icon: "border-b-[6px] hover:border-b-2",
 };
 
+const baseClasses =
+  "rounded-full font-bold transition-all duration-150 ease-out disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0";
+
+function buildClassName(
+  variant: ButtonVariant,
+  size: ButtonSize,
+  extra: string,
+): string {
+  const isActive = variant === "active";
+  const interactive = isActive
+    ? "border-2 border-brand-blue cursor-default"
+    : `border-x-0 border-t-0 border-b-black ${depthStyles[size]} hover:translate-y-[2px] cursor-pointer`;
+  return `${baseClasses} ${sizeStyles[size]} ${variantStyles[variant]} ${interactive} ${extra}`;
+}
+
 export function Button({
   variant = "primary",
   size = "md",
@@ -44,20 +60,11 @@ export function Button({
   disabled,
   ...props
 }: ButtonProps) {
-  const isActive = variant === "active";
-
-  const baseClasses =
-    "rounded-full font-bold transition-all duration-150 ease-out disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0";
-
-  const interactiveClasses = isActive
-    ? "border-2 border-brand-blue cursor-default"
-    : `border-x-0 border-t-0 border-b-black ${depthStyles[size]} hover:translate-y-[2px] cursor-pointer`;
-
   const showText = size !== "icon";
 
   return (
     <button
-      className={`${baseClasses} ${sizeStyles[size]} ${variantStyles[variant]} ${interactiveClasses} ${className}`}
+      className={buildClassName(variant, size, className)}
       disabled={disabled || loading}
       {...props}
     >
@@ -98,5 +105,30 @@ export function SubmitButton({
     >
       {children}
     </Button>
+  );
+}
+
+interface LinkButtonProps extends Omit<React.ComponentProps<typeof Link>, "className"> {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  className?: string;
+}
+
+export function LinkButton({
+  variant = "primary",
+  size = "md",
+  className = "",
+  children,
+  ...props
+}: LinkButtonProps) {
+  // text-center because Link is inline by default — sizeStyles uses w-full,
+  // and a centered label reads as a button rather than a left-aligned anchor.
+  return (
+    <Link
+      className={`${buildClassName(variant, size, className)} inline-block text-center`}
+      {...props}
+    >
+      {children}
+    </Link>
   );
 }
