@@ -161,7 +161,7 @@ export default async function DashboardPage() {
             className="mb-5 flex items-center justify-between rounded-2xl border border-border bg-input-bg px-4 py-3"
           >
             <span className="text-sm">
-              <span className="font-semibold">Lista de hoy guardada</span>
+              <span className="font-semibold">Ya tomaste asistencia</span>
               <span className="block text-xs text-text-secondary">{formatBogotaHeader(today)}</span>
             </span>
             <span className="text-xs font-medium text-brand-blue">Ver resumen</span>
@@ -169,11 +169,10 @@ export default async function DashboardPage() {
         ) : (
           <Card highlight className="mb-5">
             <div className="py-2">
-              <p className="text-xs font-medium uppercase tracking-wide text-text-secondary">
+              <p className="mb-3 text-xs font-medium uppercase tracking-wide text-text-secondary">
                 {formatBogotaHeader(today)}
               </p>
-              <h2 className="mt-1 mb-3 text-lg font-bold">¿Pasamos lista hoy?</h2>
-              <LinkButton href="/asistencia" size="sm">
+              <LinkButton href="/asistencia" size="md">
                 Tomar asistencia
               </LinkButton>
             </div>
