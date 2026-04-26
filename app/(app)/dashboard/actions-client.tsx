@@ -9,7 +9,7 @@ export function DashboardActions() {
   return (
     <>
       <Button
-        variant="accent"
+        variant="secondary"
         onClick={() => router.push("/proyectos/nuevo")}
       >
         + Nuevo proyecto

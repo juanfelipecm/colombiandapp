@@ -119,7 +119,7 @@ export function StudentList({ students: initialStudents }: { students: Student[]
               </select>
             </div>
             <div className="flex gap-2">
-              <Button type="button" variant="secondary" onClick={() => setShowForm(false)} className="flex-1">
+              <Button type="button" variant="ghost" onClick={() => setShowForm(false)} className="flex-1">
                 Cancelar
               </Button>
               <SubmitButton variant="primary" pendingText="Guardando..." className="flex-1">
@@ -129,7 +129,7 @@ export function StudentList({ students: initialStudents }: { students: Student[]
           </form>
         </div>
       ) : (
-        <Button variant="secondary" onClick={() => setShowForm(true)} className="mb-4">
+        <Button variant="ghost" onClick={() => setShowForm(true)} className="mb-4">
           <span className="flex items-center justify-center gap-2">
             <span className="text-xl">+</span> Agregar estudiante
           </span>

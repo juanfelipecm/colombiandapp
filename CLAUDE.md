@@ -25,3 +25,17 @@ Key routing rules:
 - Architecture review → invoke plan-eng-review
 - Save progress, checkpoint, resume → invoke checkpoint
 - Code quality, health check → invoke health
+
+## Design System
+
+Always read `DESIGN.md` before making any visual or UI decisions. All font choices, colors, spacing, button mechanics, iconography, and aesthetic direction are defined there. Do not deviate without explicit user approval.
+
+Hard rules from DESIGN.md (most-violated):
+- **Never use emoji glyphs.** Use Lucide icons (`lucide-react`) for all icon needs — UI, mockups, alerts, status, copy. Emojis render inconsistently and read childish in a tool aimed at making teachers feel respected.
+- **3D pill button is the signature.** `border-bottom: 6px solid #000`, `border-radius: 9999px`, **black text** on colored fills (not white). The hover "press" animation (`translateY(2px)` + border-bottom shrink + padding compensate) is the signature interaction.
+- **Brand red is destructive only.** Never decorative.
+- **Single typeface: Montserrat** (400/600/700). No second font.
+- **Long-form reading views stay single-column** at any width — comfortable measure beats stretched text.
+- **Speech bubble** = AI moment only. One per screen max.
+
+In `/qa` and `/design-review`, flag any code that doesn't match DESIGN.md.

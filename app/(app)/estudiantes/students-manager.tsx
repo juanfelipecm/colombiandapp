@@ -128,7 +128,7 @@ export function StudentsManager({ students }: { students: Student[] }) {
             <div className="flex gap-2">
               <Button
                 type="button"
-                variant="secondary"
+                variant="ghost"
                 onClick={() => setSheet({ type: "closed" })}
                 className="flex-1"
               >
@@ -160,7 +160,7 @@ export function StudentsManager({ students }: { students: Student[] }) {
             <div className="flex gap-2">
               <Button
                 type="button"
-                variant="secondary"
+                variant="ghost"
                 onClick={() => setSheet({ type: "closed" })}
                 className="flex-1"
               >

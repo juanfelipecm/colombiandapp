@@ -295,7 +295,7 @@ export function WizardClient({
             Siguiente
           </Button>
         ) : (
-          <Button onClick={startGeneration} variant="accent">
+          <Button onClick={startGeneration} variant="secondary">
             Generar proyecto
           </Button>
         )}

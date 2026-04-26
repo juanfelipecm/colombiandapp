@@ -16,7 +16,7 @@ export function PerfilActions() {
   return (
     <div className="space-y-3">
       <form action={signOut}>
-        <Button variant="secondary" type="submit">
+        <Button variant="ghost" type="submit">
           Cerrar sesion
         </Button>
       </form>
@@ -27,16 +27,18 @@ export function PerfilActions() {
             Esto eliminara tu cuenta, escuela y todos los datos de tus estudiantes. Esta accion no se puede deshacer.
           </p>
           <div className="flex gap-2">
-            <Button variant="secondary" onClick={() => setShowConfirm(false)} className="flex-1">
+            <Button variant="ghost" onClick={() => setShowConfirm(false)} className="flex-1">
               Cancelar
             </Button>
-            <button
+            <Button
+              variant="destructive"
               onClick={handleDelete}
-              disabled={deleting}
-              className="flex-1 rounded-xl bg-brand-red py-4 text-base font-semibold text-white disabled:opacity-50"
+              loading={deleting}
+              pendingText="Eliminando..."
+              className="flex-1"
             >
-              {deleting ? "Eliminando..." : "Si, eliminar"}
-            </button>
+              Si, eliminar
+            </Button>
           </div>
         </div>
       ) : (
