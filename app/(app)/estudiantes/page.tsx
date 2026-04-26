@@ -1,18 +1,36 @@
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 import { BottomNav } from "@/components/ui/bottom-nav";
+import { StudentsManager, type Student } from "./students-manager";
 
-export default function EstudiantesPage() {
+export default async function EstudiantesPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { data: studentsRaw } = await supabase
+    .from("students")
+    .select("id, first_name, last_name, birth_date, grade")
+    .order("grade", { ascending: true })
+    .order("last_name", { ascending: true });
+
+  const students: Student[] = studentsRaw ?? [];
+
   return (
-    <div className="flex flex-1 flex-col items-center justify-center py-16 text-center">
-      <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-input-bg">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <path d="M23 21v-2a4 4 0 00-3-3.87" />
-          <path d="M16 3.13a4 4 0 010 7.75" />
-        </svg>
+    <div className="relative py-6">
+      <div className="mb-5 flex items-baseline justify-between">
+        <h1 className="text-2xl font-bold">Mis estudiantes</h1>
+        {students.length > 0 && (
+          <span className="text-sm text-text-secondary">
+            {students.length} {students.length === 1 ? "estudiante" : "estudiantes"}
+          </span>
+        )}
       </div>
-      <h2 className="mb-2 text-lg font-bold text-text-primary">Estudiantes</h2>
-      <p className="text-sm text-text-secondary">Proximamente</p>
+
+      <StudentsManager students={students} />
+
       <BottomNav />
     </div>
   );
