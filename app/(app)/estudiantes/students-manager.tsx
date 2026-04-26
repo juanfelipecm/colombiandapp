@@ -5,13 +5,10 @@ import { addStudent, deleteStudent, updateStudent } from "./actions";
 import { GradeBadge } from "@/components/ui/badge";
 import { Button, SubmitButton } from "@/components/ui/button";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
-import { computeAge } from "@/lib/utils/age";
 
 export interface Student {
   id: string;
   first_name: string;
-  last_name: string;
-  birth_date: string;
   grade: number;
 }
 
@@ -52,12 +49,11 @@ export function StudentsManager({ students }: { students: Student[] }) {
     if (grouped[s.grade]) grouped[s.grade].push(s);
   }
   for (const g of GRADES) {
-    grouped[g].sort((a, b) => a.last_name.localeCompare(b.last_name, "es"));
+    grouped[g].sort((a, b) => a.first_name.localeCompare(b.first_name, "es"));
   }
 
   const handleDelete = (student: Student) => {
-    const fullName = `${student.first_name} ${student.last_name}`;
-    if (window.confirm(`¿Eliminar a ${fullName}? Esta acción no se puede deshacer.`)) {
+    if (window.confirm(`¿Eliminar a ${student.first_name}? Esta acción no se puede deshacer.`)) {
       void deleteStudent(student.id);
     }
   };
@@ -192,22 +188,18 @@ function StudentRow({
     <div className="flex items-center gap-3 border-b border-border py-3">
       <StudentAvatar
         firstName={student.first_name}
-        lastName={student.last_name}
         grade={student.grade}
       />
       <div className="flex-1 min-w-0">
         <p className="truncate text-[15px] font-semibold">
-          {student.first_name} {student.last_name}
-        </p>
-        <p className="text-xs text-text-secondary">
-          {computeAge(student.birth_date)} años
+          {student.first_name}
         </p>
       </div>
       <GradeBadge grade={student.grade} />
       <button
         type="button"
         onClick={onEdit}
-        aria-label={`Editar ${student.first_name} ${student.last_name}`}
+        aria-label={`Editar ${student.first_name}`}
         className="ml-1 p-2 text-text-placeholder hover:text-brand-blue"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -218,7 +210,7 @@ function StudentRow({
       <button
         type="button"
         onClick={onDelete}
-        aria-label={`Eliminar ${student.first_name} ${student.last_name}`}
+        aria-label={`Eliminar ${student.first_name}`}
         className="p-2 text-text-placeholder hover:text-brand-red"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -231,14 +223,12 @@ function StudentRow({
 
 function StudentAvatar({
   firstName,
-  lastName,
   grade,
 }: {
   firstName: string;
-  lastName: string;
   grade: number;
 }) {
-  const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+  const initials = firstName.charAt(0).toUpperCase();
   return (
     <div
       className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-text-secondary"
@@ -264,34 +254,6 @@ function StudentFormFields({ student }: { student?: Student }) {
           maxLength={80}
           defaultValue={student?.first_name}
           placeholder="Ej: Maria"
-          className="w-full rounded-xl border-[1.5px] border-border bg-input-bg px-4 py-3 text-base focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/30"
-        />
-      </div>
-      <div className="mb-3">
-        <label htmlFor="last_name" className="mb-1 block text-sm font-medium">
-          Apellidos
-        </label>
-        <input
-          id="last_name"
-          name="last_name"
-          type="text"
-          required
-          maxLength={80}
-          defaultValue={student?.last_name}
-          placeholder="Ej: Lopez Ramirez"
-          className="w-full rounded-xl border-[1.5px] border-border bg-input-bg px-4 py-3 text-base focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/30"
-        />
-      </div>
-      <div className="mb-3">
-        <label htmlFor="birth_date" className="mb-1 block text-sm font-medium">
-          Fecha de nacimiento
-        </label>
-        <input
-          id="birth_date"
-          name="birth_date"
-          type="date"
-          required
-          defaultValue={student?.birth_date}
           className="w-full rounded-xl border-[1.5px] border-border bg-input-bg px-4 py-3 text-base focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/30"
         />
       </div>

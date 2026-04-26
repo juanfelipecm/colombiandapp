@@ -14,7 +14,7 @@ export default async function WizardPage() {
 
   const { data: students } = await supabase
     .from("students")
-    .select("id, first_name, last_name, grade")
+    .select("id, first_name, grade")
     .eq("school_id", school.id)
     .order("grade", { ascending: true })
     .order("first_name", { ascending: true });

@@ -13,11 +13,9 @@ export async function addStudent(prevState: { error: string } | null, formData: 
   if (!school) redirect("/onboarding/school");
 
   const firstName = formData.get("first_name") as string;
-  const lastName = formData.get("last_name") as string;
-  const birthDate = formData.get("birth_date") as string;
   const grade = Number(formData.get("grade"));
 
-  if (!firstName || !lastName || !birthDate || !grade) {
+  if (!firstName || !grade) {
     return { error: "Todos los campos son obligatorios." };
   }
 
@@ -28,8 +26,6 @@ export async function addStudent(prevState: { error: string } | null, formData: 
   const { error } = await supabase.from("students").insert({
     school_id: school.id,
     first_name: firstName,
-    last_name: lastName,
-    birth_date: birthDate,
     grade,
   });
 

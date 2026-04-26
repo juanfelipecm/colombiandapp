@@ -12,9 +12,9 @@ export default async function EstudiantesPage() {
 
   const { data: studentsRaw } = await supabase
     .from("students")
-    .select("id, first_name, last_name, birth_date, grade")
+    .select("id, first_name, grade")
     .order("grade", { ascending: true })
-    .order("last_name", { ascending: true });
+    .order("first_name", { ascending: true });
 
   const students: Student[] = studentsRaw ?? [];
 

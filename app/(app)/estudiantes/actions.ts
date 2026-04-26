@@ -8,14 +8,12 @@ type FormState = { error: string } | null;
 
 function parseFields(formData: FormData) {
   const firstName = (formData.get("first_name") as string | null)?.trim() ?? "";
-  const lastName = (formData.get("last_name") as string | null)?.trim() ?? "";
-  const birthDate = (formData.get("birth_date") as string | null) ?? "";
   const grade = Number(formData.get("grade"));
-  return { firstName, lastName, birthDate, grade };
+  return { firstName, grade };
 }
 
-function validate({ firstName, lastName, birthDate, grade }: ReturnType<typeof parseFields>): FormState {
-  if (!firstName || !lastName || !birthDate || !grade) {
+function validate({ firstName, grade }: ReturnType<typeof parseFields>): FormState {
+  if (!firstName || !grade) {
     return { error: "Todos los campos son obligatorios." };
   }
   if (grade < 1 || grade > 5) {
@@ -39,8 +37,6 @@ export async function addStudent(_prevState: FormState, formData: FormData): Pro
   const { error } = await supabase.from("students").insert({
     school_id: school.id,
     first_name: fields.firstName,
-    last_name: fields.lastName,
-    birth_date: fields.birthDate,
     grade: fields.grade,
   });
 
@@ -68,8 +64,6 @@ export async function updateStudent(_prevState: FormState, formData: FormData): 
     .from("students")
     .update({
       first_name: fields.firstName,
-      last_name: fields.lastName,
-      birth_date: fields.birthDate,
       grade: fields.grade,
     })
     .eq("id", id);
