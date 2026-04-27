@@ -129,7 +129,7 @@ export function StudentList({ students: initialStudents }: { students: Student[]
           </form>
         </div>
       ) : (
-        <Button variant="ghost" onClick={() => setShowForm(true)} className="mb-4">
+        <Button variant="ghost" onClick={() => setShowForm(true)} className="w-full mb-4">
           <span className="flex items-center justify-center gap-2">
             <span className="text-xl">+</span> Agregar estudiante
           </span>
@@ -142,6 +142,7 @@ export function StudentList({ students: initialStudents }: { students: Student[]
           variant="primary"
           pendingText="Continuando..."
           disabled={!canContinue}
+          className="w-full"
         >
           Continuar
         </SubmitButton>

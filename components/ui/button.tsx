@@ -21,9 +21,9 @@ const variantStyles: Record<ButtonVariant, string> = {
 };
 
 const sizeStyles: Record<ButtonSize, string> = {
-  sm: "w-full text-sm px-4 py-2",
-  md: "w-full text-base px-6 py-3",
-  lg: "w-full text-lg px-8 py-4",
+  sm: "text-sm px-4 py-2",
+  md: "text-base px-6 py-3",
+  lg: "text-lg px-8 py-4",
   icon: "w-11 h-11 p-0 inline-flex items-center justify-center",
 };
 

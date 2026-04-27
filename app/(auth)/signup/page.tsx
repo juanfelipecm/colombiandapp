@@ -59,7 +59,7 @@ export default function SignUpPage() {
         autoComplete="new-password"
       />
 
-      <SubmitButton pendingText="Creando cuenta...">
+      <SubmitButton pendingText="Creando cuenta..." className="w-full">
         Crear cuenta
       </SubmitButton>
 

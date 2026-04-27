@@ -287,6 +287,7 @@ export function WizardClient({
         {state.step < 4 ? (
           <Button
             onClick={goNext}
+            className="w-full"
             disabled={
               (state.step === 1 && !step1Valid) ||
               (state.step === 2 && !step2Valid)
@@ -295,7 +296,7 @@ export function WizardClient({
             Siguiente
           </Button>
         ) : (
-          <Button onClick={startGeneration} variant="secondary">
+          <Button onClick={startGeneration} variant="secondary" className="w-full">
             Generar proyecto
           </Button>
         )}

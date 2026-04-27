@@ -11,6 +11,7 @@ export function DashboardActions() {
       <Button
         variant="secondary"
         onClick={() => router.push("/proyectos/nuevo")}
+        className="w-full"
       >
         + Nuevo proyecto
       </Button>

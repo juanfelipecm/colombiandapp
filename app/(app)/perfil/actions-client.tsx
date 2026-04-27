@@ -16,7 +16,7 @@ export function PerfilActions() {
   return (
     <div className="space-y-3">
       <form action={signOut}>
-        <Button variant="ghost" type="submit">
+        <Button variant="ghost" type="submit" className="w-full">
           Cerrar sesion
         </Button>
       </form>

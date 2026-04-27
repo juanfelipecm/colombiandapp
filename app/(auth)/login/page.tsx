@@ -40,7 +40,7 @@ export default function LoginPage() {
         autoComplete="current-password"
       />
 
-      <SubmitButton pendingText="Ingresando...">
+      <SubmitButton pendingText="Ingresando..." className="w-full">
         Iniciar sesion
       </SubmitButton>
 

@@ -81,7 +81,7 @@ export function SchoolForm() {
         </div>
       </div>
 
-      <SubmitButton pendingText="Guardando...">Continuar</SubmitButton>
+      <SubmitButton pendingText="Guardando..." className="w-full">Continuar</SubmitButton>
     </form>
   );
 }
