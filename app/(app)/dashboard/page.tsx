@@ -3,12 +3,29 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { BottomNav } from "@/components/ui/bottom-nav";
+import { LinkButton } from "@/components/ui/button";
 import { type ProjectCardData } from "@/components/ui/project-card";
 import { DashboardActions } from "./actions-client";
 import { InFlightGenerationCard, type InFlightGeneration } from "./in-flight-card";
 import { RecentProjectsClient } from "./recent-projects-client";
+import { bogotaToday } from "@/lib/asistencia/date";
 
 const IN_FLIGHT_WINDOW_MS = 10 * 60 * 1000;
+
+const DAY_NAMES = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+const MONTH_NAMES = [
+  "enero", "febrero", "marzo", "abril", "mayo", "junio",
+  "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
+];
+
+function formatBogotaHeader(dateIso: string): string {
+  const [y, m, d] = dateIso.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  const dayName = DAY_NAMES[dt.getUTCDay()];
+  const monthName = MONTH_NAMES[dt.getUTCMonth()];
+  const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+  return `${cap(dayName)} ${dt.getUTCDate()} de ${monthName}`;
+}
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -100,6 +117,19 @@ export default async function DashboardPage() {
     createdAt: r.created_at,
   }));
 
+  // Attendance CTA state — only ask the question if the teacher has students
+  // worth marking. We just need to know whether ANY row exists for today.
+  const today = bogotaToday();
+  let attendanceTakenToday = false;
+  if (hasStudents) {
+    const { count: attendanceCount } = await supabase
+      .from("attendance_records")
+      .select("*", { head: true, count: "exact" })
+      .eq("attendance_date", today)
+      .in("student_id", students!.map((s) => s.id));
+    attendanceTakenToday = (attendanceCount ?? 0) > 0;
+  }
+
   const firstName = teacher?.first_name || "";
   const uniqueGrades = hasStudents ? [...new Set(students!.map((s) => s.grade))].sort() : [];
   const studentCount = students?.length ?? 0;
@@ -120,6 +150,34 @@ export default async function DashboardPage() {
             <InFlightGenerationCard key={g.id} generation={g} />
           ))}
         </section>
+      ) : null}
+
+      {/* Attendance CTA — daily ritual, surfaced on Inicio so it's one tap
+          from app open. Collapses to a confirm row once today is saved. */}
+      {hasStudents ? (
+        attendanceTakenToday ? (
+          <Link
+            href="/asistencia/resumen"
+            className="mb-5 flex items-center justify-between rounded-2xl border border-border bg-input-bg px-4 py-3"
+          >
+            <span className="text-sm">
+              <span className="font-semibold">Ya tomaste asistencia</span>
+              <span className="block text-xs text-text-secondary">{formatBogotaHeader(today)}</span>
+            </span>
+            <span className="text-xs font-medium text-brand-blue">Ver resumen</span>
+          </Link>
+        ) : (
+          <Card highlight className="mb-5">
+            <div className="py-2">
+              <p className="mb-3 text-xs font-medium uppercase tracking-wide text-text-secondary">
+                {formatBogotaHeader(today)}
+              </p>
+              <LinkButton href="/asistencia" size="md">
+                Tomar asistencia
+              </LinkButton>
+            </div>
+          </Card>
+        )
       ) : null}
 
       {/* Primary CTA */}

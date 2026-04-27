@@ -7,33 +7,71 @@ export type Json =
   | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.4"
   }
   public: {
     Tables: {
+      attendance_records: {
+        Row: {
+          attendance_date: string
+          created_at: string
+          id: string
+          justified: boolean
+          note: string | null
+          recorded_by: string | null
+          status: Database["public"]["Enums"]["attendance_status"]
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          attendance_date: string
+          created_at?: string
+          id?: string
+          justified?: boolean
+          note?: string | null
+          recorded_by?: string | null
+          status: Database["public"]["Enums"]["attendance_status"]
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          attendance_date?: string
+          created_at?: string
+          id?: string
+          justified?: boolean
+          note?: string | null
+          recorded_by?: string | null
+          status?: Database["public"]["Enums"]["attendance_status"]
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_records_recorded_by_fkey"
+            columns: ["recorded_by"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_records_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "student_attendance_summary"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "attendance_records_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       derechos_basicos_aprendizaje: {
         Row: {
           created_at: string
@@ -480,6 +518,13 @@ export type Database = {
             foreignKeyName: "project_students_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
+            referencedRelation: "student_attendance_summary"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "project_students_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
             referencedRelation: "students"
             referencedColumns: ["id"]
           },
@@ -606,32 +651,32 @@ export type Database = {
       }
       students: {
         Row: {
-          birth_date: string
+          birth_date: string | null
           created_at: string
           first_name: string
           grade: number
           id: string
-          last_name: string
+          last_name: string | null
           school_id: string
           updated_at: string
         }
         Insert: {
-          birth_date: string
+          birth_date?: string | null
           created_at?: string
           first_name: string
           grade: number
           id?: string
-          last_name: string
+          last_name?: string | null
           school_id: string
           updated_at?: string
         }
         Update: {
-          birth_date?: string
+          birth_date?: string | null
           created_at?: string
           first_name?: string
           grade?: number
           id?: string
-          last_name?: string
+          last_name?: string | null
           school_id?: string
           updated_at?: string
         }
@@ -671,9 +716,36 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      student_attendance_summary: {
+        Row: {
+          absences_30: number | null
+          as_of_date: string | null
+          days_marked_30: number | null
+          first_name: string | null
+          grade: number | null
+          last_name: string | null
+          lates_30: number | null
+          school_id: string | null
+          student_created_at: string | null
+          student_id: string | null
+          unjustified_absences_30: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "students_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      attendance_student_owned: {
+        Args: { p_student_id: string }
+        Returns: boolean
+      }
       create_project_from_plan: { Args: { plan: Json }; Returns: string }
       get_teacher_school_ids: { Args: never; Returns: string[] }
       is_project_owner: { Args: { p_project_id: string }; Returns: boolean }
@@ -689,7 +761,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      attendance_status: "presente" | "ausente" | "tardanza"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -815,10 +887,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
-    Enums: {},
+    Enums: {
+      attendance_status: ["presente", "ausente", "tardanza"],
+    },
   },
 } as const
