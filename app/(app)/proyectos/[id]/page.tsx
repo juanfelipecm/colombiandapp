@@ -59,7 +59,7 @@ export default async function ProjectPage({ params }: PageProps) {
   // Phases
   const { data: phases } = await supabase
     .from("project_phases")
-    .select("id, orden, nombre, dias_label, descripcion")
+    .select("id, orden, nombre, dias_label, descripcion, completed_at")
     .eq("project_id", id)
     .order("orden", { ascending: true });
 
@@ -151,6 +151,7 @@ export default async function ProjectPage({ params }: PageProps) {
       nombre: ph.nombre,
       dias_label: ph.dias_label,
       descripcion: ph.descripcion,
+      completed_at: ph.completed_at,
       byGrade: [...groupedByGrade.entries()]
         .sort(([a], [b]) => a - b)
         .map(([grado, matMap]) => ({

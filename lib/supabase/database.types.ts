@@ -419,6 +419,7 @@ export type Database = {
       }
       project_phases: {
         Row: {
+          completed_at: string | null
           descripcion: string
           dias_label: string
           id: string
@@ -427,6 +428,7 @@ export type Database = {
           project_id: string
         }
         Insert: {
+          completed_at?: string | null
           descripcion: string
           dias_label: string
           id?: string
@@ -435,6 +437,7 @@ export type Database = {
           project_id: string
         }
         Update: {
+          completed_at?: string | null
           descripcion?: string
           dias_label?: string
           id?: string
