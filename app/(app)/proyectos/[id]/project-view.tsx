@@ -168,6 +168,16 @@ export function ProjectView({
     });
   };
 
+  const handleCompleteProject = () => {
+    if (
+      !window.confirm(
+        "¿Completar este proyecto? Podrás volver a enseñarlo después si quieres.",
+      )
+    )
+      return;
+    handleStatus("completado");
+  };
+
   const handlePrint = () => window.print();
 
   const handleShare = async () => {
@@ -188,7 +198,6 @@ export function ProjectView({
     }
   };
 
-  const completedCount = phases.filter((p) => p.completed_at).length;
   const todayPhaseId = useMemo(() => {
     if (project.status !== "en_ensenanza") return null;
     const today = todayDayOfWeekEs();
@@ -198,8 +207,6 @@ export function ProjectView({
       )?.id ?? null
     );
   }, [project.status, phases]);
-
-  const currentPhase = phases.find((p) => p.id === currentPhaseId);
 
   // Empty / recovery state — generation half-failed and left a project row
   // with no phases. Show the header and a recovery callout instead of an
@@ -251,13 +258,8 @@ export function ProjectView({
       <NextStepHero
         status={project.status}
         seEnsenoBien={project.se_enseno_bien}
-        currentPhase={currentPhase}
-        todayPhaseId={todayPhaseId}
-        completedCount={completedCount}
-        totalPhases={phases.length}
         isPending={isPending}
         onStart={() => handleStatus("en_ensenanza")}
-        onScrollToPhase={scrollToPhase}
         onChooseFeedback={handleFeedback}
       />
 
@@ -350,11 +352,11 @@ export function ProjectView({
         <div className="my-8 no-print">
           <Button
             variant="ghost"
-            onClick={() => handleStatus("completado")}
+            onClick={handleCompleteProject}
             disabled={isPending}
             className="w-full"
           >
-            Marqué este proyecto como completado
+            Completar proyecto
           </Button>
         </div>
       ) : null}
@@ -459,32 +461,25 @@ function MetaRow({ meta, duracion }: { meta: Meta; duracion: number }) {
 
 // =============================================================================
 // Next-step hero (status-aware, speech-bubble style)
+// Shown for "generado" (start CTA) and "completado" (feedback prompt /
+// thank-you). Hidden mid-teaching to keep the in-progress view focused on
+// the plan itself.
 // =============================================================================
 
 function NextStepHero({
   status,
   seEnsenoBien,
-  currentPhase,
-  todayPhaseId,
-  completedCount,
-  totalPhases,
   isPending,
   onStart,
-  onScrollToPhase,
   onChooseFeedback,
 }: {
   status: Status;
   seEnsenoBien: boolean | null;
-  currentPhase: Phase | undefined;
-  todayPhaseId: string | null;
-  completedCount: number;
-  totalPhases: number;
   isPending: boolean;
   onStart: () => void;
-  onScrollToPhase: (id: string) => void;
   onChooseFeedback: (value: boolean) => void;
 }) {
-  if (status === "archivado") return null;
+  if (status === "archivado" || status === "en_ensenanza") return null;
 
   if (status === "generado") {
     return (
@@ -502,59 +497,6 @@ function NextStepHero({
         >
           Empezar a enseñar
         </Button>
-      </SpeechBubble>
-    );
-  }
-
-  if (status === "en_ensenanza") {
-    if (todayPhaseId && currentPhase) {
-      return (
-        <SpeechBubble>
-          <p className="mb-3 leading-relaxed">
-            Hoy es {todayDayName()}. Estás en{" "}
-            <strong>
-              Fase {currentPhase.orden}: {currentPhase.nombre}
-            </strong>
-            .
-          </p>
-          <Button
-            variant="primary"
-            onClick={() => onScrollToPhase(todayPhaseId)}
-            size="sm"
-            className="w-full"
-          >
-            Ver fase de hoy
-          </Button>
-        </SpeechBubble>
-      );
-    }
-    if (currentPhase) {
-      return (
-        <SpeechBubble>
-          <p className="mb-3 leading-relaxed">
-            En curso · Fase {currentPhase.orden} de {totalPhases}:{" "}
-            <strong>{currentPhase.nombre}</strong>.
-          </p>
-          <Button
-            variant="primary"
-            onClick={() => onScrollToPhase(currentPhase.id)}
-            size="sm"
-            className="w-full"
-          >
-            Ver el plan
-          </Button>
-        </SpeechBubble>
-      );
-    }
-    // All phases completed but project status still en_ensenanza
-    return (
-      <SpeechBubble>
-        <p className="mb-3 leading-relaxed">
-          Marcaste todas las fases como hechas. ¿Completar el proyecto?
-        </p>
-        <p className="text-xs text-text-secondary">
-          {completedCount} de {totalPhases} fases completadas.
-        </p>
       </SpeechBubble>
     );
   }
@@ -631,27 +573,20 @@ function SpeechBubble({ children }: { children: React.ReactNode }) {
 function ProductoFinalPreview({ text }: { text: string }) {
   const [open, setOpen] = useState(false);
   return (
-    <section className="mb-4">
+    <section className="mb-4 mt-4">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-start justify-between gap-3 rounded-xl border border-border bg-card-bg px-3 py-2 text-left text-sm no-print"
+        className="flex w-full items-center justify-between gap-3 rounded-xl border border-border bg-card-bg px-3 py-2 text-left text-sm no-print"
         aria-expanded={open}
       >
-        <span className="min-w-0 flex-1">
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-text-secondary">
-            Producto final
-          </span>
-          {!open ? (
-            <span className="ml-2 truncate text-text-primary">
-              {text.length > 90 ? text.slice(0, 90) + "…" : text}
-            </span>
-          ) : null}
-        </span>
+        <p className="min-w-0 flex-1 text-[11px] font-semibold uppercase tracking-wide text-text-secondary">
+          Producto final
+        </p>
         <ChevronDown
           size={18}
           aria-hidden
-          className={`mt-0.5 shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
+          className={`shrink-0 text-text-secondary transition-transform ${open ? "rotate-180" : ""}`}
         />
       </button>
       {open ? (
@@ -826,7 +761,7 @@ function PhaseCard({
                 disabled={isPending}
                 className="w-full"
               >
-                Marqué la fase como hecha
+                Completar
               </Button>
             )}
           </div>
@@ -1081,20 +1016,6 @@ function MenuItem({
 function todayDayOfWeekEs(): string {
   const d = new Date().getDay();
   return ["dom", "lun", "mar", "mie", "jue", "vie", "sab"][d] ?? "";
-}
-
-function todayDayName(): string {
-  const d = new Date().getDay();
-  const names = [
-    "domingo",
-    "lunes",
-    "martes",
-    "miércoles",
-    "jueves",
-    "viernes",
-    "sábado",
-  ];
-  return names[d] ?? "";
 }
 
 function phaseContainsDay(label: string, today: string): boolean {
