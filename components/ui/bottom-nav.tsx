@@ -13,8 +13,8 @@ import {
 
 const tabs: Array<{ href: string; label: string; icon: LucideIcon }> = [
   { href: "/dashboard", label: "Inicio", icon: Home },
-  { href: "/asistencia", label: "Asistencia", icon: ClipboardCheck },
   { href: "/proyectos", label: "Proyectos", icon: FolderOpen },
+  { href: "/asistencia", label: "Asistencia", icon: ClipboardCheck },
   { href: "/estudiantes", label: "Estudiantes", icon: Users },
   { href: "/perfil", label: "Perfil", icon: User },
 ];
