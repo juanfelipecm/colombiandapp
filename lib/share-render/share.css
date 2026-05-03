@@ -180,12 +180,12 @@ body {
   background: #d0e8ff;
   border-bottom: 4px solid var(--black);
   border-radius: 12px;
-  padding: 24px;
+  padding: 28px 28px 30px;
 }
 .producto-text {
   font-weight: 400;
-  font-size: 22px;
-  line-height: 1.5;
+  font-size: 28px;
+  line-height: 1.45;
   margin: 0;
   color: var(--black);
 }
@@ -234,9 +234,9 @@ body {
   margin: 0 0 12px;
 }
 .phase-desc {
-  font-size: 18px;
+  font-size: 22px;
   line-height: 1.5;
-  margin: 0 0 18px;
+  margin: 0 0 20px;
   color: var(--black);
 }
 
@@ -256,23 +256,23 @@ body {
 .phase-grade-badge { flex: 0 0 auto; padding-top: 4px; }
 .phase-grade-content { flex: 1; }
 .phase-materia {
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 .phase-materia:last-child { margin-bottom: 0; }
 .phase-materia-name {
   font-weight: 700;
-  font-size: 16px;
+  font-size: 20px;
   color: var(--black);
-  margin: 0 0 2px;
+  margin: 0 0 4px;
 }
 .phase-materia-tarea {
-  font-size: 16px;
+  font-size: 20px;
   line-height: 1.45;
-  margin: 0 0 2px;
+  margin: 0 0 4px;
   color: var(--black);
 }
 .phase-materia-evidencia {
-  font-size: 14px;
+  font-size: 17px;
   line-height: 1.4;
   color: var(--muted);
   margin: 0;
@@ -291,11 +291,11 @@ body {
   margin-bottom: 12px;
 }
 .dba-item {
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 .dba-item:last-child { margin-bottom: 0; }
 .dba-materia-line {
-  font-size: 16px;
+  font-size: 20px;
   line-height: 1.45;
   margin: 0 0 4px;
   color: var(--black);
@@ -304,7 +304,7 @@ body {
   font-weight: 700;
 }
 .dba-evidencia {
-  font-size: 14px;
+  font-size: 17px;
   line-height: 1.4;
   color: var(--muted);
   margin: 0;
@@ -332,13 +332,13 @@ body {
   columns: 2;
   column-gap: 32px;
   margin: 0;
-  padding: 0 0 0 22px;
+  padding: 0 0 0 24px;
 }
 .materiales-list li {
   break-inside: avoid;
-  margin-bottom: 8px;
-  font-size: 16px;
-  line-height: 1.45;
+  margin-bottom: 10px;
+  font-size: 20px;
+  line-height: 1.4;
 }
 
 /* --- Cierre --- */
@@ -355,7 +355,7 @@ body {
   margin: 0 0 6px;
 }
 .cierre-text {
-  font-size: 18px;
+  font-size: 22px;
   line-height: 1.5;
   margin: 0;
   color: var(--black);
@@ -368,7 +368,7 @@ body {
 }
 .footer-soft-cap {
   font-weight: 700;
-  font-size: 14px;
+  font-size: 16px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--c-blue);
@@ -377,12 +377,12 @@ body {
 .footer-wordmark { display: block; height: 48px; width: auto; margin-bottom: 12px; }
 .footer-tagline {
   font-weight: 600;
-  font-size: 16px;
+  font-size: 18px;
   color: var(--muted);
   margin: 0 0 6px;
 }
 .footer-timestamp {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--muted);
   margin: 0;
 }
