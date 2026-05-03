@@ -43,12 +43,21 @@ export default async function AsistenciaPage({ searchParams }: PageProps) {
   // attendance_records has no school_id column, but RLS scopes the query to
   // students belonging to the teacher's school, so a date-bounded select is
   // safe. Still inner-join through students to be explicit.
-  const { data: recordsRaw } = await supabase
-    .from("attendance_records")
-    .select("attendance_date, student_id, status, students!inner(school_id)")
-    .eq("students.school_id", school.id)
-    .gte("attendance_date", start)
-    .lte("attendance_date", end);
+  const [{ data: recordsRaw }, { count: todayRecordCount }] = await Promise.all([
+    supabase
+      .from("attendance_records")
+      .select("attendance_date, student_id, status, students!inner(school_id)")
+      .eq("students.school_id", school.id)
+      .gte("attendance_date", start)
+      .lte("attendance_date", end),
+    // The CTA must reflect today's state regardless of which month is being
+    // viewed, so query for today independently of the month-bounded fetch.
+    supabase
+      .from("attendance_records")
+      .select("id, students!inner(school_id)", { count: "exact", head: true })
+      .eq("students.school_id", school.id)
+      .eq("attendance_date", today),
+  ]);
 
   type RecordRow = {
     attendance_date: string;
@@ -88,8 +97,7 @@ export default async function AsistenciaPage({ searchParams }: PageProps) {
     };
   });
 
-  const isCurrentMonth = monthIso === monthOfDate(today);
-  const todayHasRecords = recordedDates.has(today);
+  const todayHasRecords = (todayRecordCount ?? 0) > 0;
 
   return (
     <div className="py-6">
@@ -112,10 +120,10 @@ export default async function AsistenciaPage({ searchParams }: PageProps) {
         <div className="mb-5">
           <LinkButton
             href="/asistencia/hoy"
-            variant={isCurrentMonth && todayHasRecords ? "ghost" : "primary"}
+            variant={todayHasRecords ? "ghost" : "primary"}
             size="sm"
           >
-            {isCurrentMonth && todayHasRecords ? "Ver asistencia de hoy" : "Pasar lista de hoy"}
+            {todayHasRecords ? "Ver asistencia de hoy" : "Pasar lista de hoy"}
           </LinkButton>
         </div>
       )}

@@ -111,8 +111,9 @@ function DayCell({ cell, isToday }: { cell: CalendarCell; isToday: boolean }) {
   const ring = isToday ? "ring-2 ring-brand-blue" : "";
   const label = describeCell(cell);
   return (
-    <div
-      className={`flex aspect-square min-h-11 flex-col items-center justify-center rounded-lg ${bucketStyles[cell.bucket]} ${ring}`}
+    <Link
+      href={`/asistencia/dia/${cell.dateIso}`}
+      className={`flex aspect-square min-h-11 flex-col items-center justify-center rounded-lg transition-transform active:scale-95 ${bucketStyles[cell.bucket]} ${ring}`}
       title={label}
       aria-label={label}
     >
@@ -122,7 +123,7 @@ function DayCell({ cell, isToday }: { cell: CalendarCell; isToday: boolean }) {
       >
         {cell.dayOfMonth}
       </span>
-    </div>
+    </Link>
   );
 }
 

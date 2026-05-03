@@ -110,6 +110,7 @@ export async function saveAttendance(
 
   revalidatePath("/asistencia");
   revalidatePath("/asistencia/hoy");
+  revalidatePath(`/asistencia/dia/${today}`);
   revalidatePath("/dashboard");
   return null;
 }
