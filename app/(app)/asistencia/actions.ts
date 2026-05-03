@@ -109,7 +109,7 @@ export async function saveAttendance(
   }
 
   revalidatePath("/asistencia");
-  revalidatePath("/asistencia/resumen");
+  revalidatePath("/asistencia/hoy");
   revalidatePath("/dashboard");
   return null;
 }

@@ -157,7 +157,7 @@ export default async function DashboardPage() {
       {hasStudents ? (
         attendanceTakenToday ? (
           <Link
-            href="/asistencia/resumen"
+            href="/asistencia"
             className="mb-5 flex items-center justify-between rounded-2xl border border-border bg-input-bg px-4 py-3"
           >
             <span className="text-sm">
@@ -172,7 +172,7 @@ export default async function DashboardPage() {
               <p className="mb-3 text-xs font-medium uppercase tracking-wide text-text-secondary">
                 {formatBogotaHeader(today)}
               </p>
-              <LinkButton href="/asistencia" size="md">
+              <LinkButton href="/asistencia/hoy" size="md">
                 Tomar asistencia
               </LinkButton>
             </div>

@@ -12,7 +12,7 @@ import { expect, test } from "@playwright/test";
  *
  *   - take attendance for today, save, reload → values persisted
  *   - bulk "Sí, marcar presentes" → all rows pre-fill green; one-tap flip works
- *   - resumen empty when no data; populated after taking attendance
+ *   - calendar shows colored cells after taking attendance
  *   - partial-resume: save 5/18, reload, finish remaining 13
  *   - Inicio CTA: shown when no attendance for today; collapses after save
  */
@@ -23,8 +23,8 @@ test.describe("Asistencia smoke", () => {
     await expect(page).toHaveURL(/\/login$/);
   });
 
-  test("unauth /asistencia/resumen redirects to /login", async ({ page }) => {
-    await page.goto("/asistencia/resumen");
+  test("unauth /asistencia/hoy redirects to /login", async ({ page }) => {
+    await page.goto("/asistencia/hoy");
     await expect(page).toHaveURL(/\/login$/);
   });
 });
