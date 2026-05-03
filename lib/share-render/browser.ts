@@ -4,6 +4,10 @@ import type { Browser } from "puppeteer-core";
 // Singleton browser instance reused across invocations within a warm Vercel
 // function. Locked in plan-eng-review: dev uses puppeteer (bundled chromium),
 // prod uses puppeteer-core + @sparticuz/chromium. Selected via process.env.VERCEL.
+// NOTE: @sparticuz/chromium@131 only sets up LD_LIBRARY_PATH on Node 20.x/22.x
+// runtimes; on Node 24+ the al2023 libs aren't extracted and chromium fails to
+// find libnss3.so. package.json pins engines.node to 22.x — drop the pin once
+// @sparticuz/chromium adds newer Node support.
 
 let cached: Browser | null = null;
 
