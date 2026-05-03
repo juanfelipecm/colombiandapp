@@ -1,0 +1,13 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "app/api/proyectos/[id]/share-image/route.ts": {
+      "memory": 1024,
+      "maxDuration": 60
+    },
+    "app/api/proyectos/[id]/share-pdf/route.ts": {
+      "memory": 1024,
+      "maxDuration": 60
+    }
+  }
+}

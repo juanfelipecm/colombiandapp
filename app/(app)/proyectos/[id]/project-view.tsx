@@ -7,14 +7,21 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  FileDown,
   Info,
+  Loader2,
   MoreVertical,
-  Printer,
   Share2,
   Sparkles,
   Archive,
   RotateCcw,
+  X,
 } from "lucide-react";
+import {
+  shareImage,
+  downloadPdf,
+  type ShareKebabState as HandlerShareKebabState,
+} from "@/lib/share-render/share-handlers";
 import { GradeBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +31,8 @@ import {
 } from "./actions";
 
 type Status = "generado" | "en_ensenanza" | "completado" | "archivado";
+
+type ShareKebabState = HandlerShareKebabState;
 
 type Project = {
   id: string;
@@ -178,24 +187,37 @@ export function ProjectView({
     handleStatus("completado");
   };
 
-  const handlePrint = () => window.print();
+  const [shareState, setShareState] = useState<ShareKebabState>("default");
+  const [pdfState, setPdfState] = useState<ShareKebabState>("default");
 
-  const handleShare = async () => {
-    const text = `${project.titulo}\n\n${project.pregunta_guia}\n\nCreado con Colombiando · colombiando.app`;
-    if (typeof navigator !== "undefined" && "share" in navigator) {
-      try {
-        await navigator.share({ title: project.titulo, text });
-        return;
-      } catch {
-        // user cancelled or unsupported → fall back
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(text);
-      alert("Copiado al portapapeles.");
-    } catch {
-      alert("Comparte manualmente el texto del proyecto.");
-    }
+  // Prewarm chromium on mount so the first share doesn't eat a cold start.
+  // HEAD with ?prewarm=1 returns immediately without invoking the renderer.
+  useEffect(() => {
+    if (project.status === "archivado") return;
+    const ctrl = new AbortController();
+    fetch(
+      `/api/proyectos/${project.id}/share-image?prewarm=1`,
+      { method: "HEAD", signal: ctrl.signal },
+    ).catch(() => {});
+    return () => ctrl.abort();
+  }, [project.id, project.status]);
+
+  const handleShareImage = () => {
+    if (shareState === "loading") return;
+    void shareImage({
+      projectId: project.id,
+      titulo: project.titulo,
+      setState: setShareState,
+    });
+  };
+
+  const handleDownloadPdf = () => {
+    if (pdfState === "loading") return;
+    void downloadPdf({
+      projectId: project.id,
+      titulo: project.titulo,
+      setState: setPdfState,
+    });
   };
 
   const todayPhaseId = useMemo(() => {
@@ -218,8 +240,10 @@ export function ProjectView({
         <Header
           project={project}
           meta={meta}
-          onPrint={handlePrint}
-          onShare={handleShare}
+          onShareImage={handleShareImage}
+          onDownloadPdf={handleDownloadPdf}
+          shareState={shareState}
+          pdfState={pdfState}
           onArchive={() => handleStatus("archivado")}
           onUnarchive={() => handleStatus("generado")}
         />
@@ -249,8 +273,10 @@ export function ProjectView({
       <Header
         project={project}
         meta={meta}
-        onPrint={handlePrint}
-        onShare={handleShare}
+        onShareImage={handleShareImage}
+        onDownloadPdf={handleDownloadPdf}
+        shareState={shareState}
+        pdfState={pdfState}
         onArchive={() => handleStatus("archivado")}
         onUnarchive={() => handleStatus("generado")}
       />
@@ -405,15 +431,19 @@ function BackLink() {
 function Header({
   project,
   meta,
-  onPrint,
-  onShare,
+  onShareImage,
+  onDownloadPdf,
+  shareState,
+  pdfState,
   onArchive,
   onUnarchive,
 }: {
   project: Project;
   meta: Meta;
-  onPrint: () => void;
-  onShare: () => void;
+  onShareImage: () => void;
+  onDownloadPdf: () => void;
+  shareState: ShareKebabState;
+  pdfState: ShareKebabState;
   onArchive: () => void;
   onUnarchive: () => void;
 }) {
@@ -425,8 +455,10 @@ function Header({
         <div className="no-print">
           <KebabMenu
             isArchived={project.status === "archivado"}
-            onPrint={onPrint}
-            onShare={onShare}
+            onShareImage={onShareImage}
+            onDownloadPdf={onDownloadPdf}
+            shareState={shareState}
+            pdfState={pdfState}
             onArchive={onArchive}
             onUnarchive={onUnarchive}
           />
@@ -906,14 +938,18 @@ function DisclosureSection({
 
 function KebabMenu({
   isArchived,
-  onPrint,
-  onShare,
+  onShareImage,
+  onDownloadPdf,
+  shareState,
+  pdfState,
   onArchive,
   onUnarchive,
 }: {
   isArchived: boolean;
-  onPrint: () => void;
-  onShare: () => void;
+  onShareImage: () => void;
+  onDownloadPdf: () => void;
+  shareState: ShareKebabState;
+  pdfState: ShareKebabState;
   onArchive: () => void;
   onUnarchive: () => void;
 }) {
@@ -941,9 +977,18 @@ function KebabMenu({
     };
   }, [open]);
 
-  const handle = (fn: () => void) => () => {
+  const handleArchiveClick = (fn: () => void) => () => {
     setOpen(false);
     fn();
+  };
+
+  // For share/pdf, keep the menu open during loading so the user sees the
+  // inline state change, but close on terminal states.
+  const handleShareClick = () => {
+    onShareImage();
+  };
+  const handlePdfClick = () => {
+    onDownloadPdf();
   };
 
   return (
@@ -961,29 +1006,115 @@ function KebabMenu({
       {open ? (
         <div
           role="menu"
-          className="absolute right-0 z-10 mt-1 w-56 rounded-xl border border-border bg-card-bg py-1 shadow-lg"
+          className="absolute right-0 z-10 mt-1 w-72 rounded-xl border border-border bg-card-bg py-1 shadow-lg"
         >
-          <MenuItem onClick={handle(onPrint)} icon={<Printer size={16} />}>
-            Imprimir / Guardar PDF
-          </MenuItem>
-          <MenuItem onClick={handle(onShare)} icon={<Share2 size={16} />}>
-            Compartir en WhatsApp
-          </MenuItem>
+          <ShareMenuItem
+            kind="image"
+            state={shareState}
+            onClick={handleShareClick}
+          />
+          <ShareMenuItem
+            kind="pdf"
+            state={pdfState}
+            onClick={handlePdfClick}
+          />
           {isArchived ? (
             <MenuItem
-              onClick={handle(onUnarchive)}
+              onClick={handleArchiveClick(onUnarchive)}
               icon={<RotateCcw size={16} />}
             >
               Restaurar proyecto
             </MenuItem>
           ) : (
-            <MenuItem onClick={handle(onArchive)} icon={<Archive size={16} />}>
+            <MenuItem
+              onClick={handleArchiveClick(onArchive)}
+              icon={<Archive size={16} />}
+            >
               Archivar proyecto
             </MenuItem>
           )}
         </div>
       ) : null}
     </div>
+  );
+}
+
+function ShareMenuItem({
+  kind,
+  state,
+  onClick,
+}: {
+  kind: "image" | "pdf";
+  state: ShareKebabState;
+  onClick: () => void;
+}) {
+  const baseLabel = kind === "image" ? "Compartir como imagen" : "Descargar PDF";
+  const baseIcon =
+    kind === "image" ? <Share2 size={16} /> : <FileDown size={16} />;
+  const loadingLabel = kind === "image" ? "Generando…" : "Generando PDF…";
+  const successLabel =
+    kind === "image" ? "Descargado — adjúntalo en WhatsApp" : "Descargado";
+
+  let icon = baseIcon;
+  let label = baseLabel;
+  let sublabel: string | null = null;
+  let tone: "default" | "success" | "error" | "muted" = "default";
+  const isBusy = state === "loading";
+  const ariaLive: "polite" | undefined =
+    state === "loading" || state === "success" || state === "error" || state === "error_no_phases"
+      ? "polite"
+      : undefined;
+
+  if (state === "loading") {
+    icon = <Loader2 size={16} className="animate-spin" aria-hidden />;
+    label = loadingLabel;
+    sublabel =
+      "Esto puede tardar unos segundos — estamos preparando una versión bonita.";
+    tone = "muted";
+  } else if (state === "success") {
+    icon = <Check size={16} className="text-brand-green" aria-hidden />;
+    label = successLabel;
+    tone = "success";
+  } else if (state === "error_no_phases") {
+    icon = <X size={16} className="text-brand-red" aria-hidden />;
+    label = "Proyecto sin plan generado — vuelve a generarlo";
+    tone = "error";
+  } else if (state === "error") {
+    icon = <X size={16} className="text-brand-red" aria-hidden />;
+    label = "No se pudo generar — reintentar";
+    tone = "error";
+  }
+
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      onClick={onClick}
+      disabled={isBusy}
+      aria-busy={isBusy || undefined}
+      aria-live={ariaLive}
+      className={`flex w-full items-start gap-2 px-3 py-2 text-left text-sm hover:bg-input-bg disabled:cursor-wait ${
+        tone === "error" ? "text-brand-red" : ""
+      } ${tone === "success" ? "text-brand-green" : ""}`}
+    >
+      <span
+        className={
+          tone === "default" || tone === "muted" ? "mt-0.5 text-text-secondary" : "mt-0.5"
+        }
+      >
+        {icon}
+      </span>
+      <span className="flex-1">
+        <span className={tone === "muted" ? "text-text-secondary" : ""}>
+          {label}
+        </span>
+        {sublabel ? (
+          <span className="mt-0.5 block text-[11px] leading-snug text-text-secondary">
+            {sublabel}
+          </span>
+        ) : null}
+      </span>
+    </button>
   );
 }
 

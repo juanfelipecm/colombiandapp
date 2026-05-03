@@ -1,5 +1,21 @@
 # TODOS
 
+## P2: Per-user rate limit on share routes
+**What:** Add per-user rate limiting (~60 req/min) on `/api/proyectos/[id]/share-{image,pdf}`.
+**Why:** ETag + Vercel edge cache absorbs most repeat-share volume today. At >100 daily active teachers, or if an account is compromised and someone scripts share calls, the chromium render becomes the most expensive request in the app and worth gating.
+**Effort:** S (CC: ~30 min — wire `@upstash/ratelimit` middleware in `lib/share-render/route-helper.ts` before auth check, return 429 + `Retry-After: 60`).
+**Priority:** P2
+**Depends on:** None — can be added any time.
+**Context:** Surfaced in /plan-eng-review 2026-05-03 (share-image plan). Deferred per "engineered enough" — current cache + Vercel concurrency limits handle today's load. Revisit at >100 DAU or first abuse signal.
+
+## P3: Kebab touch target below 44px guideline
+**What:** Bump `KebabMenu` button from `h-9 w-9` (36×36px) to `h-11 w-11` (44×44px) in `app/(app)/proyectos/[id]/project-view.tsx`. Audit other small icon buttons (BackLink chevron, DisclosureSection chevrons) for the same issue.
+**Why:** Pre-existing a11y concern flagged during plan-design-review Pass 6. WCAG 2.5.5 Target Size guideline says 44×44px minimum on touch surfaces.
+**Effort:** S (CC: ~10 min, single PR).
+**Priority:** P3
+**Depends on:** None.
+**Context:** Surfaced in /plan-design-review 2026-05-03. Out of scope for the share-image PR (different surface, different intent).
+
 ## P2: Write DESIGN.md via /design-consultation after PBL ships
 **What:** Run `/design-consultation` to produce a formal DESIGN.md documenting the design system that emerged from PBL implementation.
 **Why:** Tokens + components exist in code but no authoritative design doc. Future design reviews have no calibration source.
