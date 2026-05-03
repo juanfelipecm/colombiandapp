@@ -11,8 +11,8 @@ export type ProjectCardData = {
 };
 
 const STATUS_LABEL: Record<ProjectCardData["status"], string> = {
-  generado: "Generado",
-  en_ensenanza: "En enseñanza",
+  generado: "Por empezar",
+  en_ensenanza: "Activo",
   completado: "Completado",
   archivado: "Archivado",
 };
