@@ -56,6 +56,10 @@ export default async function DashboardPage() {
     .select("*", { head: true, count: "exact" })
     .neq("status", "archivado");
 
+  // Fetch up to 9 (3 per tab × 3 statuses) so the dashboard tabs each have
+  // their own most-recent rows. Without this, a teacher whose 3 most recent
+  // projects are all "Por empezar" would see an empty "Activos" tab even
+  // though they have active projects further down the list.
   const { data: recentProjectsRaw } = await supabase
     .from("projects")
     .select(
@@ -63,7 +67,7 @@ export default async function DashboardPage() {
     )
     .neq("status", "archivado")
     .order("created_at", { ascending: false })
-    .limit(3);
+    .limit(9);
 
   type ProjectRow = {
     id: string;

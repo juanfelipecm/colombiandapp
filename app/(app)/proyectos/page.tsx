@@ -3,14 +3,51 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { BottomNav } from "@/components/ui/bottom-nav";
 import { ProjectCard, type ProjectCardData } from "@/components/ui/project-card";
+import { SegmentedTabs, SegmentedTabLink } from "@/components/ui/segmented-tabs";
+
+type TabKey = "activos" | "por-empezar" | "completados";
+
+const TAB_TO_STATUS: Record<TabKey, ProjectCardData["status"]> = {
+  activos: "en_ensenanza",
+  "por-empezar": "generado",
+  completados: "completado",
+};
+
+const TAB_LABEL: Record<TabKey, string> = {
+  activos: "Activos",
+  "por-empezar": "Por empezar",
+  completados: "Completados",
+};
+
+const TAB_EMPTY_COPY: Record<TabKey, { title: string; body: string }> = {
+  activos: {
+    title: "Sin proyectos activos",
+    body: "Cuando inicies un proyecto en enseñanza, aparecerá aquí.",
+  },
+  "por-empezar": {
+    title: "Sin proyectos por empezar",
+    body: "Crea uno nuevo para tener proyectos listos para enseñar.",
+  },
+  completados: {
+    title: "Sin proyectos completados",
+    body: "Los proyectos que termines aparecerán aquí.",
+  },
+};
+
+const TAB_ORDER: TabKey[] = ["activos", "por-empezar", "completados"];
+
+function parseTab(raw: string | undefined): TabKey {
+  return raw === "por-empezar" || raw === "completados" ? raw : "activos";
+}
 
 type PageProps = {
-  searchParams: Promise<{ archivados?: string }>;
+  searchParams: Promise<{ archivados?: string; tab?: string }>;
 };
 
 export default async function ProyectosPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const showArchived = params.archivados === "1";
+  const activeTab = parseTab(params.tab);
 
   const supabase = await createClient();
   const {
@@ -36,7 +73,7 @@ export default async function ProyectosPage({ searchParams }: PageProps) {
     project_grados: Array<{ grado: number }>;
   };
 
-  const projects: ProjectCardData[] = ((projectsRaw as ProjectRow[] | null) ?? []).map((p) => ({
+  const allProjects: ProjectCardData[] = ((projectsRaw as ProjectRow[] | null) ?? []).map((p) => ({
     id: p.id,
     titulo: p.titulo,
     duracion_semanas: p.duracion_semanas,
@@ -45,39 +82,75 @@ export default async function ProyectosPage({ searchParams }: PageProps) {
     grados: (p.project_grados ?? []).map((g) => g.grado).sort((a, b) => a - b),
   }));
 
+  // Per-tab counts derived from the same query so the tab strip is informative
+  // without extra round trips. Counts only matter on the non-archived view.
+  const counts: Record<TabKey, number> = {
+    activos: 0,
+    "por-empezar": 0,
+    completados: 0,
+  };
+  if (!showArchived) {
+    for (const p of allProjects) {
+      if (p.status === "en_ensenanza") counts.activos++;
+      else if (p.status === "generado") counts["por-empezar"]++;
+      else if (p.status === "completado") counts.completados++;
+    }
+  }
+
+  const visibleProjects = showArchived
+    ? allProjects
+    : allProjects.filter((p) => p.status === TAB_TO_STATUS[activeTab]);
+
+  const emptyCopy = showArchived
+    ? {
+        title: "Sin proyectos archivados",
+        body: "Los proyectos que archives aparecerán aquí.",
+      }
+    : TAB_EMPTY_COPY[activeTab];
+
   return (
     <div className="relative py-6">
-      <div className="mb-5 flex items-baseline justify-between">
+      <div className="mb-4 flex items-baseline justify-between">
         <h1 className="text-2xl font-bold">Mis proyectos</h1>
         <Link
           href={showArchived ? "/proyectos" : "/proyectos?archivados=1"}
           className="text-sm font-medium text-brand-blue"
         >
-          {showArchived ? "Activos" : "Ver archivados"}
+          {showArchived ? "Volver" : "Ver archivados"}
         </Link>
       </div>
 
-      {projects.length > 0 ? (
+      {!showArchived ? (
+        <div className="mb-4">
+          <SegmentedTabs>
+            {TAB_ORDER.map((key) => (
+              <SegmentedTabLink
+                key={key}
+                active={key === activeTab}
+                label={TAB_LABEL[key]}
+                count={counts[key]}
+                href={key === "activos" ? "/proyectos" : `/proyectos?tab=${key}`}
+              />
+            ))}
+          </SegmentedTabs>
+        </div>
+      ) : null}
+
+      {visibleProjects.length > 0 ? (
         <div className="space-y-2 pb-8">
-          {projects.map((p) => (
+          {visibleProjects.map((p) => (
             <ProjectCard key={p.id} project={p} />
           ))}
         </div>
       ) : (
-        <div className="mt-16 text-center">
+        <div className="mt-12 text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-input-bg">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
             </svg>
           </div>
-          <h2 className="mb-1 text-lg font-bold">
-            {showArchived ? "Sin proyectos archivados" : "Aún no has creado proyectos"}
-          </h2>
-          <p className="mb-6 text-sm text-text-secondary">
-            {showArchived
-              ? "Los proyectos que archives aparecerán aquí."
-              : "Empecemos con el primero."}
-          </p>
+          <h2 className="mb-1 text-lg font-bold">{emptyCopy.title}</h2>
+          <p className="mb-6 text-sm text-text-secondary">{emptyCopy.body}</p>
           {!showArchived ? (
             <Link
               href="/proyectos/nuevo"
@@ -89,7 +162,7 @@ export default async function ProyectosPage({ searchParams }: PageProps) {
         </div>
       )}
 
-      {/* FAB — only on the active tab, not when viewing archivados */}
+      {/* FAB — only on the active tabs view, not when viewing archivados */}
       {!showArchived ? (
         <Link
           href="/proyectos/nuevo"
