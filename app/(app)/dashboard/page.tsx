@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { BottomNav } from "@/components/ui/bottom-nav";
 import { LinkButton } from "@/components/ui/button";
 import { type ProjectCardData } from "@/components/ui/project-card";
-import { DashboardActions } from "./actions-client";
+import { DashboardPrimaryCta, DashboardShareCard } from "./actions-client";
 import { InFlightGenerationCard, type InFlightGeneration } from "./in-flight-card";
 import { RecentProjectsClient } from "./recent-projects-client";
 import { bogotaToday } from "@/lib/asistencia/date";
@@ -90,6 +90,49 @@ export default async function DashboardPage() {
         .sort((a, b) => a - b),
     }),
   );
+
+  // Most-recently-updated active project drives the primary CTA when the
+  // teacher already has something in flight — pushing "+ Nuevo" at that
+  // point fights the work they're already doing.
+  type ActiveProjectRow = {
+    id: string;
+    titulo: string;
+    duracion_semanas: number;
+    project_grados: Array<{ grado: number }>;
+  };
+  let activeProject: {
+    id: string;
+    titulo: string;
+    grados: number[];
+    duracion_semanas: number;
+  } | null = null;
+  if ((projectCount ?? 0) > 0) {
+    const { data: activeRaw } = await supabase
+      .from("projects")
+      .select("id, titulo, duracion_semanas, project_grados(grado)")
+      .eq("status", "en_ensenanza")
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (activeRaw) {
+      const row = activeRaw as ActiveProjectRow;
+      activeProject = {
+        id: row.id,
+        titulo: row.titulo,
+        duracion_semanas: row.duracion_semanas,
+        grados: (row.project_grados ?? [])
+          .map((g) => g.grado)
+          .sort((a, b) => a - b),
+      };
+    }
+  }
+
+  const ctaState: "first" | "active" | "between" =
+    (projectCount ?? 0) === 0
+      ? "first"
+      : activeProject
+        ? "active"
+        : "between";
 
   // Pending generations from the last 10 minutes. After that we assume the
   // server died mid-after() and stop surfacing them as "en curso" — the row
@@ -184,17 +227,13 @@ export default async function DashboardPage() {
         )
       ) : null}
 
-      {/* Primary CTA */}
+      {/* Primary CTA — adapts to project history: first / active / between */}
       {hasStudents ? (
-        <Card highlight className="mb-5">
-          <div className="py-2 text-center">
-            <h2 className="mb-1 text-lg font-bold">¿Creamos un proyecto para esta semana?</h2>
-            <p className="mb-4 text-sm text-text-secondary">
-              Diseñamos actividades adaptadas a cada grado.
-            </p>
-            <DashboardActions />
-          </div>
-        </Card>
+        ctaState === "active" && activeProject ? (
+          <DashboardPrimaryCta state="active" project={activeProject} />
+        ) : (
+          <DashboardPrimaryCta state={ctaState === "first" ? "first" : "between"} />
+        )
       ) : (
         <Card className="mb-5">
           <div className="py-2 text-center">
@@ -246,6 +285,8 @@ export default async function DashboardPage() {
           )}
         </section>
       ) : null}
+
+      {hasStudents ? <DashboardShareCard /> : null}
 
       <BottomNav />
     </div>
