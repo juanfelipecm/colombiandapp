@@ -23,6 +23,21 @@ function isProd(): boolean {
 
 async function launch(): Promise<Browser> {
   if (isProd()) {
+    // @sparticuz/chromium decides whether to extract al2023.tar.br (libnss3
+    // etc.) and whether to set LD_LIBRARY_PATH by reading AWS_EXECUTION_ENV
+    // — not process.version. Vercel's function runtime doesn't always set
+    // that var the way native AWS Lambda does, which leaves chromium spawning
+    // without its shared libs. Spoof the runtime label *before* the dynamic
+    // import so the module-load-time setup branch fires.
+    process.env.AWS_EXECUTION_ENV ??= "AWS_Lambda_nodejs22.x";
+    console.log(
+      "[share-render] launch env:",
+      JSON.stringify({
+        node: process.version,
+        AWS_EXECUTION_ENV: process.env.AWS_EXECUTION_ENV,
+        LD_LIBRARY_PATH: process.env.LD_LIBRARY_PATH,
+      }),
+    );
     const { default: chromium } = await import("@sparticuz/chromium");
     const puppeteer = await import("puppeteer-core");
     return (await puppeteer.launch({
