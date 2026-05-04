@@ -9,7 +9,11 @@ import type { Browser } from "puppeteer-core";
 // find libnss3.so. package.json pins engines.node to 22.x — drop the pin once
 // @sparticuz/chromium adds newer Node support.
 
-let cached: Browser | null = null;
+// Cache the launch *promise*, not the resolved browser, so concurrent callers
+// (e.g. prewarm + real render arriving back-to-back) await the same launch
+// instead of racing two chromium.br extractions into /tmp/chromium and hitting
+// ETXTBSY when one spawn fires while the other write is still open.
+let pending: Promise<Browser> | null = null;
 
 function isProd(): boolean {
   // VERCEL is "1" in Vercel runtimes (build, preview, prod). Any of those
@@ -17,35 +21,43 @@ function isProd(): boolean {
   return process.env.VERCEL === "1" || process.env.AWS_LAMBDA_FUNCTION_NAME !== undefined;
 }
 
-export async function getBrowser(): Promise<Browser> {
-  if (cached) {
-    try {
-      // puppeteer connection can drop between invocations on cold->warm transitions.
-      // .version() is the cheapest probe that round-trips to the browser.
-      await cached.version();
-      return cached;
-    } catch {
-      cached = null;
-    }
-  }
-
+async function launch(): Promise<Browser> {
   if (isProd()) {
     const { default: chromium } = await import("@sparticuz/chromium");
     const puppeteer = await import("puppeteer-core");
-    cached = (await puppeteer.launch({
+    return (await puppeteer.launch({
       args: chromium.args,
       executablePath: await chromium.executablePath(),
       headless: chromium.headless,
       defaultViewport: { width: 1080, height: 1920, deviceScaleFactor: 2 },
     })) as unknown as Browser;
-  } else {
-    // Dev: puppeteer ships with its own Chromium binary.
-    const puppeteer = await import("puppeteer");
-    cached = (await puppeteer.launch({
-      headless: true,
-      defaultViewport: { width: 1080, height: 1920, deviceScaleFactor: 2 },
-    })) as unknown as Browser;
+  }
+  // Dev: puppeteer ships with its own Chromium binary.
+  const puppeteer = await import("puppeteer");
+  return (await puppeteer.launch({
+    headless: true,
+    defaultViewport: { width: 1080, height: 1920, deviceScaleFactor: 2 },
+  })) as unknown as Browser;
+}
+
+export async function getBrowser(): Promise<Browser> {
+  if (pending) {
+    try {
+      const browser = await pending;
+      // puppeteer connection can drop between invocations on cold->warm transitions.
+      // .version() is the cheapest probe that round-trips to the browser.
+      await browser.version();
+      return browser;
+    } catch {
+      pending = null;
+    }
   }
 
-  return cached;
+  pending = launch();
+  try {
+    return await pending;
+  } catch (err) {
+    pending = null;
+    throw err;
+  }
 }
