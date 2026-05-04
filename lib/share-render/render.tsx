@@ -4,14 +4,26 @@ import path from "node:path";
 import { Infographic } from "@/components/share/Infographic";
 import type { ShareData } from "./load-project";
 import { estimateHeight, HEIGHT_LIMITS } from "./estimate-height";
-import { getBrowser } from "./browser";
 
 const PUBLIC_DIR = path.join(process.cwd(), "public");
 const FONT_DIR = path.join(PUBLIC_DIR, "fonts");
 
+// A4 in PDF points (72 dpi). Source PNG is rendered at 1080 px wide and
+// scaled to fit A4 width — slice height in source pixels = 1080 / (W/H).
+const A4_W_PT = 595;
+const A4_H_PT = 842;
+const RENDER_WIDTH_PX = 1080;
+const PDF_PAGE_SLICE_PX = Math.round(RENDER_WIDTH_PX / (A4_W_PT / A4_H_PT));
+
+type SatoriFont = {
+  name: string;
+  data: ArrayBuffer;
+  weight: 400 | 600 | 700;
+  style: "normal";
+};
+
 type AssetCache = {
-  cssBase: string;
-  fontFaceCss: string;
+  fonts: SatoriFont[];
   logoDataUrl: string;
 };
 
@@ -20,40 +32,37 @@ let assetCache: AssetCache | null = null;
 async function loadAssets(): Promise<AssetCache> {
   if (assetCache) return assetCache;
 
-  const [cssBase, regular, semibold, bold, logoBuf] = await Promise.all([
-    fs.readFile(path.join(process.cwd(), "lib/share-render/share.css"), "utf8"),
-    readFontIfExists("Montserrat-Regular.ttf"),
-    readFontIfExists("Montserrat-SemiBold.ttf"),
-    readFontIfExists("Montserrat-Bold.ttf"),
+  const [regular, semibold, bold, logoBuf] = await Promise.all([
+    readFontIfExists("Montserrat-Regular.ttf", 400),
+    readFontIfExists("Montserrat-SemiBold.ttf", 600),
+    readFontIfExists("Montserrat-Bold.ttf", 700),
     fs.readFile(path.join(PUBLIC_DIR, "logo-ColombiAndo.png")),
   ]);
 
-  const fontFaceCss = [
-    fontFace("Montserrat", 400, regular),
-    fontFace("Montserrat", 600, semibold),
-    fontFace("Montserrat", 700, bold),
-  ]
-    .filter(Boolean)
-    .join("\n");
+  const fonts: SatoriFont[] = [regular, semibold, bold].filter(
+    (f): f is SatoriFont => f !== null,
+  );
 
   const logoDataUrl = `data:image/png;base64,${logoBuf.toString("base64")}`;
 
-  assetCache = { cssBase, fontFaceCss, logoDataUrl };
+  assetCache = { fonts, logoDataUrl };
   return assetCache;
 }
 
-async function readFontIfExists(filename: string): Promise<Buffer | null> {
+async function readFontIfExists(
+  filename: string,
+  weight: 400 | 600 | 700,
+): Promise<SatoriFont | null> {
   try {
-    return await fs.readFile(path.join(FONT_DIR, filename));
+    const buf = await fs.readFile(path.join(FONT_DIR, filename));
+    const ab = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer;
+    return { name: "Montserrat", data: ab, weight, style: "normal" };
   } catch {
+    // Locked invariant (never-fail-on-font-load): missing font must not fail
+    // the share request. Log so the operator notices, fall back to system stack.
+    console.warn(`[share-render] font fallback: weight ${weight} (${filename}) unavailable`);
     return null;
   }
-}
-
-function fontFace(family: string, weight: number, buf: Buffer | null): string {
-  if (!buf) return "";
-  const b64 = buf.toString("base64");
-  return `@font-face{font-family:'${family}';font-weight:${weight};font-style:normal;font-display:block;src:url(data:font/ttf;base64,${b64}) format('truetype');}`;
 }
 
 const MONTHS_ES = [
@@ -63,39 +72,6 @@ const MONTHS_ES = [
 
 function formatDateEs(d: Date): string {
   return `${d.getDate()} de ${MONTHS_ES[d.getMonth()]} de ${d.getFullYear()}`;
-}
-
-async function buildHtml(
-  data: ShareData,
-  assets: AssetCache,
-  softCapped: boolean,
-): Promise<string> {
-  // Dynamic import keeps react-dom/server out of any browser-targeted bundle
-  // Next might attempt to build for this module's transitive consumers.
-  const { renderToString } = await import("react-dom/server");
-  const body = renderToString(
-    <Infographic
-      data={data}
-      logoDataUrl={assets.logoDataUrl}
-      generatedAtLabel={formatDateEs(new Date())}
-      softCapped={softCapped}
-    />,
-  );
-  const altText = `Plan de proyecto: ${data.project.titulo}. Pregunta guía: ${data.project.pregunta_guia}.`;
-  return `<!doctype html><html lang="es"><head>
-<meta charset="utf-8" />
-<meta name="robots" content="noindex" />
-<title>${escapeHtml(altText)}</title>
-<style>${assets.fontFaceCss}\n${assets.cssBase}</style>
-</head><body>${body}</body></html>`;
-}
-
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
 }
 
 export type RenderResult = {
@@ -110,68 +86,96 @@ export async function renderShare(
 ): Promise<RenderResult> {
   const assets = await loadAssets();
   const heightInfo = estimateHeight(data);
-  const html = await buildHtml(data, assets, heightInfo.softCapped);
 
-  const browser = await getBrowser();
-  const page = await browser.newPage();
+  // Image format respects the hard cap (clips long projects); PDF takes the
+  // full estimated height across multiple A4 pages.
+  const renderHeight =
+    format === "image" && heightInfo.hardCapped ? HEIGHT_LIMITS.HARD_CAP : heightInfo.estimated;
 
-  try {
-    await page.setViewport({ width: 1080, height: 1920, deviceScaleFactor: 2 });
-    await page.setContent(html, { waitUntil: "networkidle0" });
+  const png = await renderPng(data, assets, heightInfo.softCapped, renderHeight);
 
-    // Wait for fonts. If they don't load, the CSS fallback stack ('Helvetica
-    // Neue', Arial) renders. Locked in plan-eng-review: never fail on fonts.
-    const fontsOk: boolean = await page
-      .evaluate(async () => {
-        try {
-          await (document as Document & { fonts: { ready: Promise<unknown> } }).fonts.ready;
-          return (
-            (document as Document & { fonts: { check: (s: string) => boolean } }).fonts.check(
-              "700 16px Montserrat",
-            ) === true
-          );
-        } catch {
-          return false;
-        }
-      })
-      .catch(() => false);
-
-    if (!fontsOk) {
-      console.warn(
-        `[share-render] Montserrat fonts did not register; falling back to system stack`,
-      );
-    }
-
-    if (format === "image") {
-      const rawBuf = (await page.screenshot({
-        fullPage: true,
-        type: "png",
-        captureBeyondViewport: true,
-        clip: heightInfo.hardCapped
-          ? { x: 0, y: 0, width: 1080, height: HEIGHT_LIMITS.HARD_CAP }
-          : undefined,
-      })) as Buffer | Uint8Array;
-      const buffer = Buffer.isBuffer(rawBuf) ? rawBuf : Buffer.from(rawBuf);
-      return {
-        buffer,
-        contentType: "image/png",
-        filenameSlug: data.project.titulo,
-      };
-    }
-
-    const rawPdf = (await page.pdf({
-      format: "A4",
-      printBackground: true,
-      preferCSSPageSize: true,
-      margin: { top: 0, bottom: 0, left: 0, right: 0 },
-    })) as Buffer | Uint8Array;
-    const buffer = Buffer.isBuffer(rawPdf) ? rawPdf : Buffer.from(rawPdf);
+  if (format === "image") {
     return {
-      buffer,
-      contentType: "application/pdf",
+      buffer: png,
+      contentType: "image/png",
       filenameSlug: data.project.titulo,
     };
-  } finally {
-    await page.close().catch(() => {});
   }
+
+  const pdfBuf = await renderPdf(png, renderHeight);
+  return {
+    buffer: pdfBuf,
+    contentType: "application/pdf",
+    filenameSlug: data.project.titulo,
+  };
 }
+
+async function renderPng(
+  data: ShareData,
+  assets: AssetCache,
+  softCapped: boolean,
+  heightPx: number,
+): Promise<Buffer> {
+  const { default: satori } = await import("satori");
+  const { Resvg } = await import("@resvg/resvg-js");
+
+  const svg = await satori(
+    <Infographic
+      data={data}
+      logoDataUrl={assets.logoDataUrl}
+      generatedAtLabel={formatDateEs(new Date())}
+      softCapped={softCapped}
+    />,
+    {
+      width: RENDER_WIDTH_PX,
+      height: heightPx,
+      fonts: assets.fonts,
+    },
+  );
+
+  const resvg = new Resvg(svg, {
+    fitTo: { mode: "width", value: RENDER_WIDTH_PX },
+  });
+  return Buffer.from(resvg.render().asPng());
+}
+
+async function renderPdf(png: Buffer, totalHeightPx: number): Promise<Buffer> {
+  const { PDFDocument } = await import("pdf-lib");
+
+  const pdf = await PDFDocument.create();
+  const embedded = await pdf.embedPng(png);
+
+  // Scale PNG width 1080 px → A4 width 595 pt. Scaled image height in pt:
+  const scaledHeightPt = totalHeightPx * (A4_W_PT / RENDER_WIDTH_PX);
+  const pageCount = Math.max(1, Math.ceil(scaledHeightPt / A4_H_PT));
+
+  // For page i (0-indexed from top), the image's bottom-left y in page coords
+  // is (i + 1) * A4_H_PT - scaledHeightPt. Derivation:
+  //   - Stack pages bottom-to-top; total stack height = pageCount * A4_H_PT
+  //   - Image's bottom-left in stack coords sits at pageCount*A4_H_PT - scaledHeightPt
+  //   - Page i's bottom in stack coords: (pageCount - 1 - i) * A4_H_PT
+  //   - Subtract → (i + 1) * A4_H_PT - scaledHeightPt
+  // pdf-lib clips drawing to page bounds automatically, so the parts of the
+  // image outside the visible page are just not rendered — cheaper than slicing.
+  for (let i = 0; i < pageCount; i++) {
+    const page = pdf.addPage([A4_W_PT, A4_H_PT]);
+    page.drawImage(embedded, {
+      x: 0,
+      y: (i + 1) * A4_H_PT - scaledHeightPt,
+      width: A4_W_PT,
+      height: scaledHeightPt,
+    });
+  }
+
+  return Buffer.from(await pdf.save());
+}
+
+export const __test = {
+  PDF_PAGE_SLICE_PX,
+  A4_W_PT,
+  A4_H_PT,
+  RENDER_WIDTH_PX,
+  renderPdf,
+  renderPng,
+  loadAssets,
+};

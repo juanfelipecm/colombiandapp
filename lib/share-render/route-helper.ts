@@ -4,7 +4,6 @@ import { createClient as createServerSupabase } from "@/lib/supabase/server";
 import { loadShareData } from "./load-project";
 import { renderShare } from "./render";
 import { slugify } from "./slug";
-import { getBrowser } from "./browser";
 import { makeEtag } from "./etag";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -27,17 +26,6 @@ export async function handleShareRequest(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return jsonError("unauthorized", 401);
-
-  // Prewarm: cheap path. Auth-check + boot the chromium singleton so the next
-  // real call lands warm. No render, no DB load.
-  const url = new URL(request.url);
-  if (url.searchParams.get("prewarm") === "1") {
-    getBrowser().catch(() => {});
-    return new NextResponse(null, {
-      status: 200,
-      headers: { "Cache-Control": "no-store" },
-    });
-  }
 
   const result = await loadShareData(projectId);
   if (!result.ok) {

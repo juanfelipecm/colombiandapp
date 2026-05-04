@@ -1,5 +1,13 @@
 # TODOS
 
+## P2: Build playwright auth-session helper
+**What:** Implement `tests/e2e/fixtures/auth.ts` per the pattern in `tests/e2e/README.md` (service-role JWT injection or storageState).
+**Why:** Five specs are currently `test.skip`-gated waiting on this: `wizard-happy-path`, `idempotency`, `backgrounding`, `admin-404`, and the new `share-image-authed.spec.ts` (added in the Satori rewrite). Without it we have no authenticated end-to-end coverage of the share render pipeline.
+**Effort:** S (CC: ~1-2 hr)
+**Priority:** P2
+**Depends on:** Service-role key env var available to playwright runner.
+**Context:** Flagged repeatedly in /plan-eng-review cycles. Unit tests + golden snapshot in `tests/share-render/render.test.ts` cover renderer correctness; the missing piece is the integration assertion (route + auth + render + cache headers all together).
+
 ## P2: Per-user rate limit on share routes
 **What:** Add per-user rate limiting (~60 req/min) on `/api/proyectos/[id]/share-{image,pdf}`.
 **Why:** ETag + Vercel edge cache absorbs most repeat-share volume today. At >100 daily active teachers, or if an account is compromised and someone scripts share calls, the chromium render becomes the most expensive request in the app and worth gating.

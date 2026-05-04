@@ -190,18 +190,6 @@ export function ProjectView({
   const [shareState, setShareState] = useState<ShareKebabState>("default");
   const [pdfState, setPdfState] = useState<ShareKebabState>("default");
 
-  // Prewarm chromium on mount so the first share doesn't eat a cold start.
-  // HEAD with ?prewarm=1 returns immediately without invoking the renderer.
-  useEffect(() => {
-    if (project.status === "archivado") return;
-    const ctrl = new AbortController();
-    fetch(
-      `/api/proyectos/${project.id}/share-image?prewarm=1`,
-      { method: "HEAD", signal: ctrl.signal },
-    ).catch(() => {});
-    return () => ctrl.abort();
-  }, [project.id, project.status]);
-
   const handleShareImage = () => {
     if (shareState === "loading") return;
     void shareImage({

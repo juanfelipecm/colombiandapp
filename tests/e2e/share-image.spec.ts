@@ -21,9 +21,9 @@ test.describe("share-image route", () => {
     expect(res.status()).toBeLessThan(500);
   });
 
-  test("prewarm HEAD with bad id is also auth-gated", async ({ request }) => {
+  test("HEAD request is also auth-gated", async ({ request }) => {
     const res = await request.head(
-      "/api/proyectos/00000000-0000-0000-0000-000000000000/share-image?prewarm=1",
+      "/api/proyectos/00000000-0000-0000-0000-000000000000/share-image",
     );
     expect([401, 307, 404]).toContain(res.status());
     expect(res.status()).toBeLessThan(500);
