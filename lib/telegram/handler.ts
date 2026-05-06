@@ -11,6 +11,7 @@ import {
   teacherExists,
 } from "./app-actions";
 import { sendTelegramMessage } from "./client";
+import { buildIntroMessage, buildLinkedIntroMessage } from "./messages";
 import {
   clearSession,
   consumeLinkCode,
@@ -27,13 +28,7 @@ type HandlerResult = {
   background?: () => Promise<void>;
 };
 
-const HELP_TEXT = [
-  "Comandos disponibles:",
-  "/resumen - ver estado de tu aula",
-  "/asistencia - tomar asistencia de hoy",
-  "/proyecto - crear un proyecto ABP",
-  "/cancelar - cancelar el flujo actual",
-].join("\n");
+const HELP_TEXT = buildIntroMessage();
 
 export async function handleTelegramUpdate(update: TelegramUpdate): Promise<HandlerResult> {
   const message = update.message ?? update.edited_message;
@@ -88,6 +83,11 @@ export async function handleTelegramUpdate(update: TelegramUpdate): Promise<Hand
     return {};
   }
 
+  const session = await getSession(chatId);
+  if (!identity && session?.flow === "onboard") {
+    return handleOnboardMessage(chatId, text, message, session);
+  }
+
   if (!identity) {
     // Auto-create account silently on any first message
     const tgFirst = message.from?.first_name?.trim() || "Profe";
@@ -108,17 +108,16 @@ export async function handleTelegramUpdate(update: TelegramUpdate): Promise<Hand
     };
     await saveIdentity(newIdentity);
     await clearSession(chatId);
-    await reply(chatId, `¡Hola, ${tgFirst}! Soy ColombiAndo, tu asistente pedagógico.\n\n¿En qué te puedo ayudar hoy?`, newIdentity);
+    await reply(chatId, buildIntroMessage(tgFirst), newIdentity);
     return {};
   }
 
-  const session = await getSession(chatId);
   if (session && session.flow !== "idle") {
     return handleSessionMessage(chatId, text, identity, session);
   }
 
   const normalized = normalize(text);
-  if (normalized.startsWith("/help") || normalized === "help" || normalized === "ayuda") {
+  if (normalized.startsWith("/help") || normalized.startsWith("/ayuda") || normalized === "help" || normalized === "ayuda") {
     await reply(chatId, HELP_TEXT, identity);
     return {};
   }
@@ -174,14 +173,14 @@ async function handleStart(message: TelegramMessage, text: string): Promise<Hand
     };
     await saveIdentity(identity);
     await clearSession(chatId);
-    await reply(chatId, `Cuenta vinculada. Ya puedes usar /resumen, /asistencia o /proyecto.`, identity);
+    await reply(chatId, buildLinkedIntroMessage(identity.firstName), identity);
     return {};
   }
 
   // Already linked?
   const existing = await getIdentity(providerUserId);
   if (existing) {
-    await reply(chatId, `Ya estás registrado. Puedes escribir /resumen, /asistencia o /proyecto.`, existing);
+    await reply(chatId, buildIntroMessage(existing.firstName), existing);
     return {};
   }
 
@@ -204,7 +203,7 @@ async function handleStart(message: TelegramMessage, text: string): Promise<Hand
       };
       await saveIdentity(identity);
       await clearSession(chatId);
-      await reply(chatId, `\u00a1Bienvenido, ${tgFirst}! Tu cuenta est\u00e1 lista.\n\nPuedes escribir /resumen, /asistencia o /proyecto.`, identity);
+      await reply(chatId, buildIntroMessage(tgFirst), identity);
       return {};
     }
   }
@@ -243,7 +242,7 @@ async function handleOnboardMessage(
   };
   await saveIdentity(identity);
   await clearSession(chatId);
-  await reply(chatId, `\u00a1Bienvenido, ${firstName}! Tu cuenta est\u00e1 lista.\n\nPuedes escribir /resumen, /asistencia o /proyecto.`, identity);
+  await reply(chatId, buildIntroMessage(firstName), identity);
   return {};
 }
 
