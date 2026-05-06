@@ -13,6 +13,7 @@ import {
 import { sendTelegramDocument, sendTelegramMessage } from "./client";
 import { buildIntroMessage, buildLinkedIntroMessage } from "./messages";
 import {
+  clearTelegramMessageLogs,
   clearSession,
   consumeLinkCode,
   deleteIdentity,
@@ -57,7 +58,7 @@ export async function handleTelegramUpdate(update: TelegramUpdate): Promise<Hand
     return {};
   }
 
-  if (text.startsWith("/reset")) {
+  if (isResetCommand(text)) {
     if (process.env.TELEGRAM_ENABLE_RESET !== "true") {
       await reply(chatId, "Comando no disponible.", identity);
       return {};
@@ -70,6 +71,11 @@ export async function handleTelegramUpdate(update: TelegramUpdate): Promise<Hand
       await clearSession(chatId);
       await reply(chatId, "Listo. No había usuario guardado; escribe cualquier mensaje para empezar.", null);
     }
+    await clearTelegramMessageLogs({
+      chatId,
+      providerUserId,
+      teacherId: identity?.teacherId,
+    });
     return {};
   }
 
@@ -530,8 +536,12 @@ function isNoTopic(text: string): boolean {
 }
 
 function commandName(text: string): string | undefined {
-  const match = text.match(/^\/([a-zA-Z0-9_]+)/);
+  const match = text.match(/^[/\\]([a-zA-Z0-9_]+)/);
   return match?.[1]?.toLowerCase();
+}
+
+function isResetCommand(text: string): boolean {
+  return /^[/\\]reset\b/i.test(text);
 }
 
 function normalize(input: string): string {

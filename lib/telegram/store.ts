@@ -103,6 +103,39 @@ export async function clearSession(chatId: string): Promise<void> {
   await redisPipeline([["DEL", TG_KEYS.session(chatId)]]);
 }
 
+export async function clearTelegramMessageLogs(target: {
+  chatId: string;
+  providerUserId?: string;
+  teacherId?: string;
+}): Promise<void> {
+  try {
+    const raw = await redisCommand<string[]>(["LRANGE", TG_KEYS.msgs, 0, MESSAGE_LOG_MAX - 1]);
+    const kept = (raw ?? []).filter((item) => {
+      try {
+        const message = JSON.parse(item) as TelegramMessageLog;
+        return !matchesTelegramLogTarget(message, target);
+      } catch {
+        return true;
+      }
+    });
+
+    const commands: RedisCommand[] = [["DEL", TG_KEYS.msgs]];
+    if (kept.length > 0) {
+      commands.push(["RPUSH", TG_KEYS.msgs, ...kept]);
+    }
+    if (target.providerUserId) {
+      commands.push(["ZREM", TG_KEYS.userCounts, target.providerUserId]);
+    }
+    if (target.teacherId) {
+      commands.push(["ZREM", TG_KEYS.teacherCounts, target.teacherId]);
+    }
+
+    await redisPipeline(commands);
+  } catch (err) {
+    console.error("[telegram] clear logs failed", err);
+  }
+}
+
 export async function deleteIdentity(identity: TelegramIdentity): Promise<void> {
   await redisPipeline([
     ["HDEL", TG_KEYS.identities, identity.providerUserId],
@@ -132,4 +165,15 @@ export async function recentMessageLogs(limit = 200): Promise<TelegramMessageLog
       }
     })
     .filter((item): item is TelegramMessageLog => item !== null);
+}
+
+function matchesTelegramLogTarget(
+  message: TelegramMessageLog,
+  target: { chatId: string; providerUserId?: string; teacherId?: string },
+): boolean {
+  return (
+    message.chatId === target.chatId ||
+    (Boolean(target.providerUserId) && message.providerUserId === target.providerUserId) ||
+    (Boolean(target.teacherId) && message.teacherId === target.teacherId)
+  );
 }

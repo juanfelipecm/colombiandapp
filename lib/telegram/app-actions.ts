@@ -1,5 +1,6 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { bogotaToday } from "@/lib/asistencia/date";
 import type { AttendanceStatus } from "@/lib/asistencia/types";
@@ -26,6 +27,24 @@ type MateriaRow = {
   nombre: string;
   orden: number;
 };
+
+type ProjectStudentRow = {
+  id: string;
+  grade: number;
+};
+
+const EXAMPLE_STUDENT_FIRST_NAMES = [
+  "Ana",
+  "Luis",
+  "Marta",
+  "Carlos",
+  "Sofia",
+  "Diego",
+  "Lina",
+  "Mateo",
+  "Sara",
+  "Juan",
+];
 
 export function appBaseUrl(): string {
   if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
@@ -238,12 +257,16 @@ export async function startTelegramProjectGeneration(args: {
     .from("students")
     .select("id, grade")
     .eq("school_id", schoolId);
-  if (!students || students.length === 0) {
-    return { ok: false, message: "Agrega estudiantes antes de crear proyectos." };
+  let projectStudents: ProjectStudentRow[] = (students ?? []) as ProjectStudentRow[];
+  if (projectStudents.length === 0) {
+    projectStudents = await createExampleStudentsForProject(admin, args.teacherId, schoolId);
+  }
+  if (projectStudents.length === 0) {
+    return { ok: false, message: "No pude preparar estudiantes de ejemplo para crear el proyecto." };
   }
 
-  const studentIds = students.map((s) => s.id);
-  const grados = [...new Set(students.map((s) => s.grade))].sort((a, b) => a - b);
+  const studentIds = projectStudents.map((s) => s.id);
+  const grados = [...new Set(projectStudents.map((s) => s.grade))].sort((a, b) => a - b);
   const studentCheck = await verifyStudentsOwnedByTeacher(admin, args.teacherId, studentIds, grados);
   if (!studentCheck.ok) return { ok: false, message: studentCheck.message };
 
@@ -295,6 +318,54 @@ export async function startTelegramProjectGeneration(args: {
   }
 
   return { ok: true, generationId: pending.id, projectId: result.projectId };
+}
+
+async function createExampleStudentsForProject(
+  admin: SupabaseClient,
+  teacherId: string,
+  schoolId: string,
+): Promise<ProjectStudentRow[]> {
+  const { data: school, error: schoolErr } = await admin
+    .from("schools")
+    .select("id, grades")
+    .eq("teacher_id", teacherId)
+    .maybeSingle();
+
+  if (schoolErr || !school || school.id !== schoolId) {
+    console.error("[telegram] example student school lookup failed", schoolErr);
+    return [];
+  }
+
+  const grades = normalizeSchoolGradesForExamples(school.grades);
+  const rows = grades.flatMap((grade, gradeIndex) =>
+    [0, 1].map((offset) => {
+      const nameIndex = gradeIndex * 2 + offset;
+      return {
+        school_id: schoolId,
+        first_name: EXAMPLE_STUDENT_FIRST_NAMES[nameIndex % EXAMPLE_STUDENT_FIRST_NAMES.length],
+        last_name: "Ejemplo",
+        grade,
+      };
+    }),
+  );
+
+  const { data, error } = await admin.from("students").insert(rows).select("id, grade");
+  if (error || !data) {
+    console.error("[telegram] example student insert failed", error);
+    return [];
+  }
+
+  return data as ProjectStudentRow[];
+}
+
+function normalizeSchoolGradesForExamples(rawGrades: unknown): number[] {
+  const grades = Array.isArray(rawGrades)
+    ? rawGrades
+        .map(Number)
+        .filter((grade) => Number.isInteger(grade) && grade >= 1 && grade <= 5)
+    : [];
+  const unique = [...new Set(grades)].sort((a, b) => a - b);
+  return unique.length > 0 ? unique : [3];
 }
 
 async function loadSchoolAndStudents(teacherId: string): Promise<{
