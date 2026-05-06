@@ -1,4 +1,5 @@
 import "server-only";
+import { randomUUID } from "node:crypto";
 import { redisCommand, redisPipeline, type RedisCommand } from "@/lib/upstash/redis";
 import type { TelegramIdentity, TelegramMessageLog, TelegramSession } from "./types";
 
@@ -10,10 +11,22 @@ export const TG_KEYS = {
   teacherChats: "tg:teacher_chats",
   session: (chatId: string) => `tg:session:${chatId}`,
   link: (code: string) => `tg:link:${code}`,
+  docs: (teacherId: string) => `tg:docs:${teacherId}`,
+};
+
+type StoredDocument = {
+  id: string;
+  title: string;
+  htmlContent: string;
+  source: "freeform" | "project";
+  projectId?: string;
+  createdAt: number;
 };
 
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 14;
 const LINK_TTL_SECONDS = 60 * 10;
+const DOCS_TTL_SECONDS = 60 * 60 * 24 * 365;
+const DOCS_MAX = 20;
 const MESSAGE_LOG_MAX = 5000;
 
 export async function logTelegramMessage(entry: TelegramMessageLog): Promise<void> {
@@ -176,4 +189,164 @@ function matchesTelegramLogTarget(
     (Boolean(target.providerUserId) && message.providerUserId === target.providerUserId) ||
     (Boolean(target.teacherId) && message.teacherId === target.teacherId)
   );
+}
+
+export async function recentChatHistory(
+  chatId: string,
+  limit = 10,
+): Promise<Array<{ role: "user" | "assistant"; content: string }>> {
+  const scanLimit = Math.min(MESSAGE_LOG_MAX, 200);
+  const raw = await redisCommand<string[]>(["LRANGE", TG_KEYS.msgs, 0, scanLimit - 1]);
+  if (!raw) return [];
+
+  const chatMessages: TelegramMessageLog[] = [];
+  for (const item of raw) {
+    try {
+      const msg = JSON.parse(item) as TelegramMessageLog;
+      if (msg.chatId === chatId && msg.text) chatMessages.push(msg);
+    } catch {
+      continue;
+    }
+    if (chatMessages.length >= limit) break;
+  }
+
+  chatMessages.reverse();
+
+  const mapped = chatMessages.map((msg) => ({
+    role: msg.direction === "in" || msg.direction === "system" ? ("user" as const) : ("assistant" as const),
+    content: msg.text,
+  }));
+
+  // Anthropic API requires alternating user/assistant turns — merge consecutive same-role messages
+  const merged: typeof mapped = [];
+  for (const msg of mapped) {
+    if (merged.length > 0 && merged[merged.length - 1].role === msg.role) {
+      merged[merged.length - 1].content += `\n${msg.content}`;
+    } else {
+      merged.push({ ...msg });
+    }
+  }
+
+  // Must start with a user message
+  while (merged.length > 0 && merged[0].role !== "user") {
+    merged.shift();
+  }
+
+  return merged;
+}
+
+export async function saveTelegramDocument(
+  teacherId: string,
+  title: string,
+  htmlContent: string,
+  source: "freeform" | "project" = "freeform",
+  projectId?: string,
+): Promise<string | null> {
+  try {
+    const doc: StoredDocument = {
+      id: randomUUID(),
+      title,
+      htmlContent,
+      source,
+      projectId,
+      createdAt: Date.now(),
+    };
+    const key = TG_KEYS.docs(teacherId);
+    await redisPipeline([
+      ["LPUSH", key, JSON.stringify(doc)],
+      ["LTRIM", key, 0, DOCS_MAX - 1],
+      ["EXPIRE", key, DOCS_TTL_SECONDS],
+    ]);
+    return doc.id;
+  } catch (err) {
+    console.error("[telegram] save document failed", err);
+    return null;
+  }
+}
+
+export async function recentTeacherDocuments(
+  teacherId: string,
+  limit = 5,
+): Promise<Array<{ id: string; title: string; source: string; createdAt: number }>> {
+  try {
+    const raw = await redisCommand<string[]>(["LRANGE", TG_KEYS.docs(teacherId), 0, limit - 1]);
+    return (raw ?? [])
+      .map((item) => {
+        try {
+          const doc = JSON.parse(item) as StoredDocument;
+          return { id: doc.id, title: doc.title, source: doc.source, createdAt: doc.createdAt };
+        } catch {
+          return null;
+        }
+      })
+      .filter((d): d is NonNullable<typeof d> => d !== null);
+  } catch {
+    return [];
+  }
+}
+
+export async function getTelegramDocument(
+  teacherId: string,
+  docId: string,
+): Promise<StoredDocument | null> {
+  try {
+    const raw = await redisCommand<string[]>(["LRANGE", TG_KEYS.docs(teacherId), 0, DOCS_MAX - 1]);
+    for (const item of raw ?? []) {
+      try {
+        const doc = JSON.parse(item) as StoredDocument;
+        if (doc.id === docId) return doc;
+      } catch {
+        continue;
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export async function getLatestTelegramDocument(
+  teacherId: string,
+): Promise<StoredDocument | null> {
+  try {
+    const raw = await redisCommand<string[]>(["LRANGE", TG_KEYS.docs(teacherId), 0, 0]);
+    if (!raw?.[0]) return null;
+    return JSON.parse(raw[0]) as StoredDocument;
+  } catch {
+    return null;
+  }
+}
+
+export async function updateTelegramDocument(
+  teacherId: string,
+  docId: string,
+  updatedHtml: string,
+  updatedTitle?: string,
+): Promise<boolean> {
+  try {
+    const raw = await redisCommand<string[]>(["LRANGE", TG_KEYS.docs(teacherId), 0, DOCS_MAX - 1]);
+    if (!raw) return false;
+
+    const updated = raw.map((item) => {
+      try {
+        const doc = JSON.parse(item) as StoredDocument;
+        if (doc.id === docId) {
+          return JSON.stringify({ ...doc, htmlContent: updatedHtml, title: updatedTitle ?? doc.title });
+        }
+        return item;
+      } catch {
+        return item;
+      }
+    });
+
+    const key = TG_KEYS.docs(teacherId);
+    await redisPipeline([
+      ["DEL", key],
+      ["RPUSH", key, ...updated],
+      ["EXPIRE", key, DOCS_TTL_SECONDS],
+    ]);
+    return true;
+  } catch {
+    return false;
+  }
 }

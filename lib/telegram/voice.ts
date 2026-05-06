@@ -7,7 +7,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import type { TelegramIdentity, TelegramMessage } from "./types";
 import { sendTelegramMessage, telegramApi, telegramApiUrl, telegramFileUrl } from "./client";
-import { logTelegramMessage } from "./store";
+import { logTelegramMessage, recentChatHistory } from "./store";
 
 const execFileAsync = promisify(execFile);
 
@@ -69,7 +69,7 @@ export async function handleVoiceMessage(
 
     let claudeResponse: string;
     try {
-      claudeResponse = await askClaude(transcript);
+      claudeResponse = await askClaude(transcript, chatId);
     } catch (err) {
       console.error("[voice] Claude failed", err);
       await sendTelegramMessage({
@@ -136,7 +136,7 @@ export async function transcribeAudio(filePath: string): Promise<string> {
   return data.text ?? "";
 }
 
-export async function askClaude(text: string): Promise<string> {
+export async function askClaude(text: string, chatId?: string): Promise<string> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY is required");
 
@@ -150,6 +150,20 @@ export async function askClaude(text: string): Promise<string> {
     "Tu respuesta será leída en voz alta, así que usa un tono natural para hablar. No uses formato markdown.",
   ].join("\n");
 
+  const history = chatId ? await recentChatHistory(chatId, 10) : [];
+
+  const messages = history.length > 0
+    ? [...history, { role: "user" as const, content: text }]
+    : [{ role: "user" as const, content: text }];
+
+  if (
+    history.length > 0 &&
+    history[history.length - 1].role === "user" &&
+    history[history.length - 1].content === text
+  ) {
+    messages.pop();
+  }
+
   const resp = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -161,7 +175,7 @@ export async function askClaude(text: string): Promise<string> {
       model: "claude-sonnet-4-6",
       max_tokens: 3000,
       system: systemPrompt,
-      messages: [{ role: "user", content: text }],
+      messages,
     }),
   });
 

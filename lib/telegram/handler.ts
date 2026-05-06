@@ -22,7 +22,10 @@ import {
   getIdentity,
   getSession,
   logTelegramMessage,
+  recentChatHistory,
+  recentTeacherDocuments,
   saveIdentity,
+  saveTelegramDocument,
   saveSession,
 } from "./store";
 import type { TelegramIdentity, TelegramMessage, TelegramSession, TelegramUpdate } from "./types";
@@ -347,6 +350,13 @@ async function handleSessionMessage(
           if (result.projectId) {
             const htmlFile = await renderProjectHtmlFile(result.projectId);
             if (htmlFile) {
+              await saveTelegramDocument(
+                identity.teacherId,
+                htmlFile.fileName.replace(/\.html$/, ""),
+                htmlFile.fileBuffer.toString("utf-8"),
+                "project",
+                result.projectId,
+              );
               await sendTelegramDocument({
                 chatId,
                 fileName: htmlFile.fileName,
@@ -392,7 +402,12 @@ async function handleFreeformMessage(
   }
 
   try {
-    const systemPrompt = [
+    const [history, docs] = await Promise.all([
+      recentChatHistory(chatId, 10),
+      recentTeacherDocuments(identity.teacherId, 5),
+    ]);
+
+    const systemParts = [
       "Eres ColombiAndo, asistente para profes rurales en Colombia.",
       "Responde en español natural. Mantén las respuestas concisas y conversacionales a menos que el usuario pida más detalle.",
       "REGLA MAS IMPORTANTE: Responde lo mas corto posible. Maximo 2-3 oraciones. Si puedes decirlo en una oracion, mejor.",
@@ -404,7 +419,29 @@ async function handleFreeformMessage(
       "- Despues del --- escribe el contenido largo con formato markdown (## titulos, listas, **negritas**, etc).",
       "- El contenido despues del --- se le manda como archivo al profe.",
       "Habla como un colega, no como un manual.",
-    ].join("\n");
+    ];
+
+    if (docs.length > 0) {
+      systemParts.push(
+        "\nDocumentos recientes del profe:",
+        ...docs.map((d) => `- "${d.title}" (${d.source}, ${new Date(d.createdAt).toLocaleDateString("es-CO")})`),
+      );
+    }
+
+    const systemPrompt = systemParts.join("\n");
+
+    const messages = history.length > 0
+      ? [...history, { role: "user" as const, content: text }]
+      : [{ role: "user" as const, content: text }];
+
+    // Deduplicate: if the last history entry is the same user message, don't double it
+    if (
+      history.length > 0 &&
+      history[history.length - 1].role === "user" &&
+      history[history.length - 1].content === text
+    ) {
+      messages.pop();
+    }
 
     const resp = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -417,7 +454,7 @@ async function handleFreeformMessage(
         model: "claude-sonnet-4-6",
         max_tokens: 3000,
         system: systemPrompt,
-        messages: [{ role: "user", content: text }],
+        messages,
       }),
     });
 
@@ -437,6 +474,9 @@ async function handleFreeformMessage(
         const intro = answer.slice(0, separatorIdx).trim();
         const longContent = answer.slice(separatorIdx + 5).trim();
         if (intro) await reply(chatId, intro, identity);
+        const html = buildHtmlDocument(longContent);
+        const docTitle = intro.slice(0, 100) || "Documento";
+        await saveTelegramDocument(identity.teacherId, docTitle, html);
         await sendAsHtmlFile(chatId, longContent, identity);
       } else {
         await reply(chatId, answer, identity);
@@ -510,14 +550,9 @@ function markdownToHtml(md: string): string {
   return out.join("\n");
 }
 
-async function sendAsHtmlFile(
-  chatId: string,
-  markdown: string,
-  identity: TelegramIdentity,
-): Promise<void> {
+function buildHtmlDocument(markdown: string): string {
   const bodyHtml = markdownToHtml(markdown);
-
-  const html = `<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ColombiAndo</title>
 <style>
@@ -530,7 +565,14 @@ pre code{background:none;padding:0}
 strong{color:#2d5016}
 </style>
 </head><body>${bodyHtml}</body></html>`;
+}
 
+async function sendAsHtmlFile(
+  chatId: string,
+  markdown: string,
+  identity: TelegramIdentity,
+): Promise<void> {
+  const html = buildHtmlDocument(markdown);
   await sendTelegramDocument({
     chatId,
     fileName: "colombiando.html",
