@@ -121,6 +121,10 @@ export async function handleTelegramUpdate(update: TelegramUpdate): Promise<Hand
     await reply(chatId, HELP_TEXT, identity);
     return {};
   }
+  if (isIntroRequest(normalized)) {
+    await reply(chatId, buildIntroMessage(identity.firstName), identity);
+    return {};
+  }
   if (normalized.startsWith("/resumen") || normalized.includes("resumen") || normalized.includes("inicio")) {
     await reply(chatId, await buildTeacherSummary(identity.teacherId), identity);
     return {};
@@ -396,6 +400,21 @@ function parseDuration(text: string): 1 | 2 | null {
 function isCancel(text: string): boolean {
   const normalized = normalize(text);
   return normalized.startsWith("/cancel") || normalized === "cancelar" || normalized === "salir";
+}
+
+function isIntroRequest(normalized: string): boolean {
+  return (
+    normalized === "hola" ||
+    normalized === "buenas" ||
+    normalized === "buenos dias" ||
+    normalized === "buenas tardes" ||
+    normalized === "buenas noches" ||
+    normalized === "hi" ||
+    normalized === "hello" ||
+    normalized.includes("que puedes hacer") ||
+    normalized.includes("que haces") ||
+    normalized.includes("como funciona")
+  );
 }
 
 function isNoTopic(text: string): boolean {

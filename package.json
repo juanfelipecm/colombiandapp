@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "deploy:droplet": "bash scripts/deploy-droplet.sh",
     "lint": "eslint",
     "test": "vitest run",
     "test:sql": "supabase test db",
