@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { TelegramIdentity, TelegramUpdate } from "@/lib/telegram/types";
 
 const mocks = vi.hoisted(() => ({
@@ -43,18 +43,12 @@ vi.mock("@/lib/telegram/store", () => ({
 import { handleTelegramUpdate } from "@/lib/telegram/handler";
 
 describe("telegram reset handler", () => {
-  const oldEnableReset = process.env.TELEGRAM_ENABLE_RESET;
-
   beforeEach(() => {
-    process.env.TELEGRAM_ENABLE_RESET = "true";
+    delete process.env.TELEGRAM_ENABLE_RESET;
     for (const mock of Object.values(mocks)) mock.mockReset();
   });
 
-  afterEach(() => {
-    process.env.TELEGRAM_ENABLE_RESET = oldEnableReset;
-  });
-
-  it("clears monitor logs after confirming a reset for a linked user", async () => {
+  it("resets and clears monitor logs without requiring a feature flag", async () => {
     const identity: TelegramIdentity = {
       teacherId: "teacher-1",
       providerUserId: "provider-1",

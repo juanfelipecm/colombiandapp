@@ -59,10 +59,6 @@ export async function handleTelegramUpdate(update: TelegramUpdate): Promise<Hand
   }
 
   if (isResetCommand(text)) {
-    if (process.env.TELEGRAM_ENABLE_RESET !== "true") {
-      await reply(chatId, "Comando no disponible.", identity);
-      return {};
-    }
     if (identity) {
       await resetTelegramUser(identity.teacherId);
       await deleteIdentity(identity);
