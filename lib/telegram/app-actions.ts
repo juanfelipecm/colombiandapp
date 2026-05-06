@@ -71,6 +71,16 @@ export async function createTeacherFromTelegram(firstName: string, lastName: str
   return { teacherId };
 }
 
+export async function resetTelegramUser(teacherId: string): Promise<boolean> {
+  const admin = createAdminClient();
+  const { error } = await admin.auth.admin.deleteUser(teacherId);
+  if (error) {
+    console.error("[telegram] deleteUser failed", error);
+    return false;
+  }
+  return true;
+}
+
 export async function teacherExists(teacherId: string): Promise<boolean> {
   const admin = createAdminClient();
   const { data } = await admin.from("teachers").select("id").eq("id", teacherId).maybeSingle();

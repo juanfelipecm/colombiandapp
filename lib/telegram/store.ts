@@ -103,6 +103,14 @@ export async function clearSession(chatId: string): Promise<void> {
   await redisPipeline([["DEL", TG_KEYS.session(chatId)]]);
 }
 
+export async function deleteIdentity(identity: TelegramIdentity): Promise<void> {
+  await redisPipeline([
+    ["HDEL", TG_KEYS.identities, identity.providerUserId],
+    ["HDEL", TG_KEYS.teacherChats, identity.teacherId],
+    ["DEL", TG_KEYS.session(identity.chatId)],
+  ]);
+}
+
 export async function getTeacherTelegramIdentity(teacherId: string): Promise<TelegramIdentity | null> {
   const raw = await redisCommand<string>(["HGET", TG_KEYS.teacherChats, teacherId]);
   if (!raw) return null;

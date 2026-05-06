@@ -5,6 +5,7 @@ import {
   createTeacherFromTelegram,
   formatMateriaPrompt,
   parseMateriaSelection,
+  resetTelegramUser,
   saveAttendanceFromTelegram,
   startTelegramProjectGeneration,
   teacherExists,
@@ -13,6 +14,7 @@ import { sendTelegramMessage } from "./client";
 import {
   clearSession,
   consumeLinkCode,
+  deleteIdentity,
   getIdentity,
   getSession,
   logTelegramMessage,
@@ -57,6 +59,22 @@ export async function handleTelegramUpdate(update: TelegramUpdate): Promise<Hand
 
   if (!text) {
     await reply(chatId, "Por ahora solo leo mensajes de texto.", identity);
+    return {};
+  }
+
+  if (text.startsWith("/reset")) {
+    if (process.env.TELEGRAM_ENABLE_RESET !== "true") {
+      await reply(chatId, "Comando no disponible.", identity);
+      return {};
+    }
+    if (identity) {
+      await resetTelegramUser(identity.teacherId);
+      await deleteIdentity(identity);
+      await reply(chatId, "Listo. Te borré como usuario de prueba. Escribe cualquier mensaje para empezar de nuevo.", null);
+    } else {
+      await clearSession(chatId);
+      await reply(chatId, "Listo. No había usuario guardado; escribe cualquier mensaje para empezar.", null);
+    }
     return {};
   }
 
