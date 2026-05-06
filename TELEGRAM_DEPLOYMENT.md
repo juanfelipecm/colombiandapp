@@ -26,8 +26,19 @@ Before the demo, replace the placeholder values for:
 - `TELEGRAM_BOT_TOKEN`
 - `TELEGRAM_BOT_USERNAME`
 - `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME`
+- `OPENAI_API_KEY` (for voice note transcription and TTS)
 
 `TELEGRAM_WEBHOOK_SECRET` is already generated on the droplet. Use it as the Telegram webhook secret token.
+
+## Voice note support
+
+Voice notes require `OPENAI_API_KEY` and `ffmpeg` installed on the server.
+
+```bash
+apt install -y ffmpeg
+```
+
+Models used: `gpt-4o-mini-transcribe` (STT) and `gpt-4o-mini-tts` (TTS).
 
 ## BotFather sequence
 

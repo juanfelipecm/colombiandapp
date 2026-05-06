@@ -13,6 +13,7 @@ import {
 import { sendTelegramDocument, sendTelegramMessage } from "./client";
 import { buildIntroMessage, buildLinkedIntroMessage } from "./messages";
 import { renderProjectHtmlFile } from "./project-html";
+import { handleVoiceMessage } from "./voice";
 import {
   clearTelegramMessageLogs,
   clearSession,
@@ -49,13 +50,39 @@ export async function handleTelegramUpdate(update: TelegramUpdate): Promise<Hand
     teacherId: identity?.teacherId,
     username: message.from?.username,
     firstName: message.from?.first_name,
-    text,
+    text: text || (message.voice ? "[nota de voz]" : ""),
     command: commandName(text),
     updateId: update.update_id,
   });
 
+  if (message.voice) {
+    let voiceIdentity = identity;
+    if (!voiceIdentity) {
+      const tgFirst = message.from?.first_name?.trim() || "Profe";
+      const tgLast = message.from?.last_name?.trim() || "";
+      const result = await createTeacherFromTelegram(tgFirst, tgLast);
+      if (!result) {
+        await reply(chatId, "Hubo un error. Intenta de nuevo.", null);
+        return {};
+      }
+      voiceIdentity = {
+        teacherId: result.teacherId,
+        providerUserId,
+        chatId,
+        username: message.from?.username ?? null,
+        firstName: tgFirst,
+        lastName: tgLast || null,
+        linkedAt: Date.now(),
+      };
+      await saveIdentity(voiceIdentity);
+      await clearSession(chatId);
+    }
+    await handleVoiceMessage(message, voiceIdentity);
+    return {};
+  }
+
   if (!text) {
-    await reply(chatId, "Por ahora solo leo mensajes de texto.", identity);
+    await reply(chatId, "Por ahora solo leo mensajes de texto y notas de voz.", identity);
     return {};
   }
 
@@ -367,6 +394,7 @@ async function handleFreeformMessage(
   try {
     const systemPrompt = [
       "Eres ColombiAndo, asistente para profes rurales en Colombia.",
+      "Responde en español natural. Mantén las respuestas concisas y conversacionales a menos que el usuario pida más detalle.",
       "REGLA MAS IMPORTANTE: Responde lo mas corto posible. Maximo 2-3 oraciones. Si puedes decirlo en una oracion, mejor.",
       "Usa espanol sencillo y directo. Palabras simples, oraciones cortas. Nada de rodeos ni explicaciones largas.",
       "Da respuestas practicas y concretas. Ve al grano.",

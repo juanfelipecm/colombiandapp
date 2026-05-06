@@ -104,6 +104,14 @@ export async function sendTelegramDocument(options: SendDocumentOptions): Promis
   });
 }
 
+export function telegramApiUrl(method: string): string {
+  return `https://api.telegram.org/bot${botToken()}/${method}`;
+}
+
+export function telegramFileUrl(filePath: string): string {
+  return `https://api.telegram.org/file/bot${botToken()}/${filePath}`;
+}
+
 export async function setTelegramWebhook(webhookUrl: string, secretToken: string): Promise<unknown> {
   return telegramApi("setWebhook", {
     url: webhookUrl,

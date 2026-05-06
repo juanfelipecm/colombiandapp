@@ -16,12 +16,21 @@ export type TelegramChat = {
   last_name?: string;
 };
 
+export type TelegramVoice = {
+  file_id: string;
+  file_unique_id: string;
+  duration: number;
+  mime_type?: string;
+  file_size?: number;
+};
+
 export type TelegramMessage = {
   message_id: number;
   from?: TelegramUser;
   chat: TelegramChat;
   date: number;
   text?: string;
+  voice?: TelegramVoice;
 };
 
 export type TelegramUpdate = {
