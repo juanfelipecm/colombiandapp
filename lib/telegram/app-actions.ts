@@ -33,6 +33,44 @@ export function appBaseUrl(): string {
   return "http://localhost:3000";
 }
 
+export async function createTeacherFromTelegram(firstName: string, lastName: string): Promise<{ teacherId: string } | null> {
+  const admin = createAdminClient();
+  const fakeEmail = `tg-${randomUUID().slice(0, 8)}@telegram.local`;
+  const fakePassword = randomUUID();
+  const { data, error } = await admin.auth.admin.createUser({
+    email: fakeEmail,
+    password: fakePassword,
+    email_confirm: true,
+  });
+  if (error || !data.user) {
+    console.error("[telegram] createUser failed", error);
+    return null;
+  }
+  const teacherId = data.user.id;
+  const { error: profileError } = await admin
+    .from("teachers")
+    .insert({ id: teacherId, first_name: firstName, last_name: lastName });
+  if (profileError) {
+    console.error("[telegram] insert teacher failed", profileError);
+    return null;
+  }
+  // Auto-create a school so the teacher can use all features immediately
+  const { error: schoolError } = await admin
+    .from("schools")
+    .insert({
+      teacher_id: teacherId,
+      name: `Aula de ${firstName}`,
+      department: "Por definir",
+      municipality: "Por definir",
+      grades: [3],
+    });
+  if (schoolError) {
+    console.error("[telegram] insert school failed", schoolError);
+    // Non-fatal — teacher exists, school can be added later
+  }
+  return { teacherId };
+}
+
 export async function teacherExists(teacherId: string): Promise<boolean> {
   const admin = createAdminClient();
   const { data } = await admin.from("teachers").select("id").eq("id", teacherId).maybeSingle();
@@ -54,7 +92,7 @@ export async function buildTeacherSummary(teacherId: string): Promise<string> {
   ]);
 
   if (!teacher) return "No encuentro tu perfil de docente.";
-  if (!school) return `Hola ${teacher.first_name}. Todavía falta registrar tu escuela en ColombiAndo.`;
+  if (!school) return `Hola ${teacher.first_name}. Tu aula a\u00fan no tiene estudiantes. Env\u00eda /asistencia para empezar.`;
 
   const { data: students } = await admin
     .from("students")
@@ -135,7 +173,7 @@ export async function saveAttendanceFromTelegram(
 ): Promise<{ ok: true; message: string } | { ok: false; message: string }> {
   const admin = createAdminClient();
   const { school, students } = await loadSchoolAndStudents(teacherId);
-  if (!school) return { ok: false, message: "Primero registra tu escuela en ColombiAndo." };
+  if (!school) return { ok: false, message: "Primero agrega estudiantes con /asistencia." };
   if (students.length === 0) return { ok: false, message: "No tienes estudiantes registrados todavía." };
 
   const parsed = parseAttendanceText(text, students);
@@ -184,7 +222,7 @@ export async function startTelegramProjectGeneration(args: {
   if (!cap.ok) return { ok: false, message: cap.message };
 
   const schoolId = await resolveSchoolId(admin, args.teacherId);
-  if (!schoolId) return { ok: false, message: "Agrega tu escuela antes de crear proyectos." };
+  if (!schoolId) return { ok: false, message: "Primero agrega estudiantes con /asistencia." };
 
   const { data: students } = await admin
     .from("students")

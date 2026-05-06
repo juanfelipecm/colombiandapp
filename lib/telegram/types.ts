@@ -43,6 +43,7 @@ export type TelegramIdentity = {
 export type TelegramSession =
   | { flow: "idle"; teacherId?: string; updatedAt: number }
   | { flow: "attendance"; teacherId: string; updatedAt: number }
+  | { flow: "onboard"; step: "nombre"; providerUserId: string; chatId: string; updatedAt: number }
   | {
       flow: "project";
       step: "materias" | "duracion" | "tema" | "generating";

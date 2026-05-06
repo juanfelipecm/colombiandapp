@@ -2,6 +2,7 @@ import "server-only";
 import {
   appBaseUrl,
   buildTeacherSummary,
+  createTeacherFromTelegram,
   formatMateriaPrompt,
   parseMateriaSelection,
   saveAttendanceFromTelegram,
@@ -59,7 +60,7 @@ export async function handleTelegramUpdate(update: TelegramUpdate): Promise<Hand
     return {};
   }
 
-  if (text.startsWith("/start")) {
+  if (text.startsWith("/start") || text.startsWith("/abrir")) {
     return handleStart(message, text);
   }
 
@@ -70,7 +71,26 @@ export async function handleTelegramUpdate(update: TelegramUpdate): Promise<Hand
   }
 
   if (!identity) {
-    await reply(chatId, "Necesito vincular este chat con tu cuenta de ColombiAndo. Abre Perfil > Conectar Telegram y envíame /start CODIGO.", null);
+    // Auto-create account silently on any first message
+    const tgFirst = message.from?.first_name?.trim() || "Profe";
+    const tgLast = message.from?.last_name?.trim() || "";
+    const result = await createTeacherFromTelegram(tgFirst, tgLast);
+    if (!result) {
+      await reply(chatId, "Hubo un error. Intenta de nuevo.", null);
+      return {};
+    }
+    const newIdentity: TelegramIdentity = {
+      teacherId: result.teacherId,
+      providerUserId,
+      chatId,
+      username: message.from?.username ?? null,
+      firstName: tgFirst,
+      lastName: tgLast || null,
+      linkedAt: Date.now(),
+    };
+    await saveIdentity(newIdentity);
+    await clearSession(chatId);
+    await reply(chatId, `¡Hola, ${tgFirst}! Soy ColombiAndo, tu asistente pedagógico.\n\n¿En qué te puedo ayudar hoy?`, newIdentity);
     return {};
   }
 
@@ -109,8 +129,8 @@ export async function handleTelegramUpdate(update: TelegramUpdate): Promise<Hand
     return {};
   }
 
-  await reply(chatId, HELP_TEXT, identity);
-  return {};
+  // Free-form: send any message to the LLM as a teaching assistant
+  return handleFreeformMessage(chatId, text, identity);
 }
 
 async function handleStart(message: TelegramMessage, text: string): Promise<HandlerResult> {
@@ -118,34 +138,94 @@ async function handleStart(message: TelegramMessage, text: string): Promise<Hand
   const providerUserId = message.from?.id ? String(message.from.id) : chatId;
   const code = text.split(/\s+/)[1]?.trim();
 
-  if (!code) {
-    const existing = await getIdentity(providerUserId);
-    if (existing) {
-      await reply(chatId, `Ya estás vinculado. Puedes escribir /resumen, /asistencia o /proyecto.`, existing);
-    } else {
-      await reply(chatId, "Hola. Para vincular tu cuenta, abre ColombiAndo > Perfil > Conectar Telegram y envíame /start CODIGO.", null);
+  // If they have a link code, use the existing web-linking flow
+  if (code) {
+    const linked = await consumeLinkCode(code);
+    if (!linked || !(await teacherExists(linked.teacherId))) {
+      await reply(chatId, "Ese código no sirve o ya venció. Genera uno nuevo desde ColombiAndo.", null);
+      return {};
     }
+    const identity: TelegramIdentity = {
+      teacherId: linked.teacherId,
+      providerUserId,
+      chatId,
+      username: message.from?.username ?? null,
+      firstName: message.from?.first_name ?? null,
+      lastName: message.from?.last_name ?? null,
+      linkedAt: Date.now(),
+    };
+    await saveIdentity(identity);
+    await clearSession(chatId);
+    await reply(chatId, `Cuenta vinculada. Ya puedes usar /resumen, /asistencia o /proyecto.`, identity);
     return {};
   }
 
-  const linked = await consumeLinkCode(code);
-  if (!linked || !(await teacherExists(linked.teacherId))) {
-    await reply(chatId, "Ese código no sirve o ya venció. Genera uno nuevo desde ColombiAndo.", null);
+  // Already linked?
+  const existing = await getIdentity(providerUserId);
+  if (existing) {
+    await reply(chatId, `Ya estás registrado. Puedes escribir /resumen, /asistencia o /proyecto.`, existing);
+    return {};
+  }
+
+  // New teacher — start onboarding. Use Telegram name as default if available.
+  const tgFirst = message.from?.first_name?.trim();
+  const tgLast = message.from?.last_name?.trim();
+
+  if (tgFirst) {
+    // We have at least a first name from Telegram, try to auto-create
+    const result = await createTeacherFromTelegram(tgFirst, tgLast || "");
+    if (result) {
+      const identity: TelegramIdentity = {
+        teacherId: result.teacherId,
+        providerUserId,
+        chatId,
+        username: message.from?.username ?? null,
+        firstName: tgFirst,
+        lastName: tgLast ?? null,
+        linkedAt: Date.now(),
+      };
+      await saveIdentity(identity);
+      await clearSession(chatId);
+      await reply(chatId, `\u00a1Bienvenido, ${tgFirst}! Tu cuenta est\u00e1 lista.\n\nPuedes escribir /resumen, /asistencia o /proyecto.`, identity);
+      return {};
+    }
+  }
+
+  // No Telegram name available — ask for it
+  await saveSession(chatId, { flow: "onboard", step: "nombre", providerUserId, chatId, updatedAt: Date.now() });
+  await reply(chatId, "\u00a1Hola! Soy ColombiAndo. \u00bfC\u00f3mo te llamas? (nombre y apellido)", null);
+  return {};
+}
+
+async function handleOnboardMessage(
+  chatId: string,
+  text: string,
+  message: TelegramMessage,
+  session: { flow: "onboard"; step: "nombre"; providerUserId: string; chatId: string; updatedAt: number },
+): Promise<HandlerResult> {
+  const parts = text.trim().split(/\s+/);
+  const firstName = parts[0] || "Profe";
+  const lastName = parts.slice(1).join(" ") || "";
+
+  const result = await createTeacherFromTelegram(firstName, lastName);
+  if (!result) {
+    await reply(chatId, "Hubo un error creando tu cuenta. Intenta de nuevo con /abrir.", null);
+    await clearSession(chatId);
     return {};
   }
 
   const identity: TelegramIdentity = {
-    teacherId: linked.teacherId,
-    providerUserId,
+    teacherId: result.teacherId,
+    providerUserId: session.providerUserId,
     chatId,
     username: message.from?.username ?? null,
-    firstName: message.from?.first_name ?? null,
-    lastName: message.from?.last_name ?? null,
+    firstName,
+    lastName: lastName || null,
     linkedAt: Date.now(),
   };
   await saveIdentity(identity);
   await clearSession(chatId);
-  await reply(chatId, `Cuenta vinculada. Ya puedes usar /resumen, /asistencia o /proyecto.`, identity);
+  await reply(chatId, `\u00a1Bienvenido, ${firstName}! Tu cuenta est\u00e1 lista.\n\nPuedes escribir /resumen, /asistencia o /proyecto.`, identity);
   return {};
 }
 
@@ -233,6 +313,61 @@ async function reply(chatId: string, text: string, identity: TelegramIdentity | 
     teacherId: identity?.teacherId,
     providerUserId: identity?.providerUserId,
   });
+}
+
+async function handleFreeformMessage(
+  chatId: string,
+  text: string,
+  identity: TelegramIdentity,
+): Promise<HandlerResult> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    await reply(chatId, HELP_TEXT, identity);
+    return {};
+  }
+
+  try {
+    const systemPrompt = [
+      "Eres ColombiAndo, un asistente pedagogico para profesores rurales en Colombia.",
+      "Ayudas con planificacion de clases, ideas de proyectos, estrategias de ensenanza, y cualquier pregunta educativa.",
+      "Responde en espanol, de forma clara y practica. Se breve pero util.",
+      "Si el profesor pide ayuda con un proyecto, sugiere ideas concretas adaptadas a escuelas rurales multigrado.",
+      "No menciones que eres una IA. Habla como un colega experimentado.",
+    ].join(" ");
+
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: [{ role: "user", content: text }],
+      }),
+    });
+
+    if (!resp.ok) {
+      console.error("[telegram] LLM error", resp.status);
+      await reply(chatId, HELP_TEXT, identity);
+      return {};
+    }
+
+    const data = await resp.json() as { content?: Array<{ text?: string }> };
+    const answer = data.content?.map((b) => b.text || "").join("\n").trim();
+    if (answer) {
+      await reply(chatId, answer, identity);
+    } else {
+      await reply(chatId, HELP_TEXT, identity);
+    }
+  } catch (err) {
+    console.error("[telegram] LLM call failed", err);
+    await reply(chatId, HELP_TEXT, identity);
+  }
+  return {};
 }
 
 function parseDuration(text: string): 1 | 2 | null {
