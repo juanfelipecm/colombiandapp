@@ -12,6 +12,7 @@ import {
 } from "./app-actions";
 import { sendTelegramDocument, sendTelegramMessage } from "./client";
 import { buildIntroMessage, buildLinkedIntroMessage } from "./messages";
+import { renderProjectHtmlFile } from "./project-html";
 import {
   clearTelegramMessageLogs,
   clearSession,
@@ -316,8 +317,22 @@ async function handleSessionMessage(
             await reply(chatId, result.message, identity);
             return;
           }
+          if (result.projectId) {
+            const htmlFile = await renderProjectHtmlFile(result.projectId);
+            if (htmlFile) {
+              await sendTelegramDocument({
+                chatId,
+                fileName: htmlFile.fileName,
+                fileBuffer: htmlFile.fileBuffer,
+                caption: "Tu proyecto está listo.",
+                teacherId: identity.teacherId,
+                providerUserId: identity.providerUserId,
+              });
+              return;
+            }
+          }
           const link = result.projectId ? `${appBaseUrl()}/proyectos/${result.projectId}` : appBaseUrl();
-          await reply(chatId, `Tu proyecto está listo:\n${link}`, identity);
+          await reply(chatId, `Tu proyecto está listo. No pude crear el archivo, pero puedes abrirlo aquí:\n${link}`, identity);
         },
       };
     }
