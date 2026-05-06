@@ -6,10 +6,10 @@ describe("Telegram intro messages", () => {
     const message = buildIntroMessage("Jonathan L");
 
     expect(message).toContain("Hola, Jonathan L! Soy ColombiAndo");
-    expect(message).toContain("/proyecto");
-    expect(message).toContain("/asistencia");
-    expect(message).toContain("/resumen");
-    expect(message).toContain("/cancelar");
+    expect(message).toContain("/proyecto - Crear un proyecto ABP");
+    expect(message).toContain("/asistencia - Tomar asistencia");
+    expect(message).toContain("/resumen - Ver resumen del aula");
+    expect(message).toContain("/cancelar - Cancelar un flujo");
     expect(message).toContain("También puedes escribir normal");
   });
 
@@ -21,4 +21,3 @@ describe("Telegram intro messages", () => {
     expect(message).toContain("Crear un proyecto ABP");
   });
 });
-
