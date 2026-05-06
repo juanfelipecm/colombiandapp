@@ -507,17 +507,20 @@ function isCancel(text: string): boolean {
 }
 
 function isIntroRequest(normalized: string): boolean {
+  const compact = normalized.replace(/[!¡?¿.,;:]+/g, "").trim();
+
   return (
-    normalized === "hola" ||
-    normalized === "buenas" ||
-    normalized === "buenos dias" ||
-    normalized === "buenas tardes" ||
-    normalized === "buenas noches" ||
-    normalized === "hi" ||
-    normalized === "hello" ||
-    normalized.includes("que puedes hacer") ||
-    normalized.includes("que haces") ||
-    normalized.includes("como funciona")
+    compact === "hola" ||
+    compact.startsWith("hola ") ||
+    compact === "buenas" ||
+    compact === "buenos dias" ||
+    compact === "buenas tardes" ||
+    compact === "buenas noches" ||
+    compact === "hi" ||
+    compact === "hello" ||
+    compact.includes("que puedes hacer") ||
+    compact.includes("que haces") ||
+    compact.includes("como funciona")
   );
 }
 
