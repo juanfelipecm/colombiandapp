@@ -10,7 +10,7 @@ import {
   startTelegramProjectGeneration,
   teacherExists,
 } from "./app-actions";
-import { sendTelegramMessage } from "./client";
+import { sendTelegramDocument, sendTelegramMessage } from "./client";
 import { buildIntroMessage, buildLinkedIntroMessage } from "./messages";
 import {
   clearSession,
@@ -349,12 +349,17 @@ async function handleFreeformMessage(
 
   try {
     const systemPrompt = [
-      "Eres ColombiAndo, un asistente pedagogico para profesores rurales en Colombia.",
-      "Ayudas con planificacion de clases, ideas de proyectos, estrategias de ensenanza, y cualquier pregunta educativa.",
-      "Responde en espanol, de forma clara y practica. Se breve pero util.",
-      "Si el profesor pide ayuda con un proyecto, sugiere ideas concretas adaptadas a escuelas rurales multigrado.",
-      "No menciones que eres una IA. Habla como un colega experimentado.",
-    ].join(" ");
+      "Eres ColombiAndo, asistente para profes rurales en Colombia.",
+      "REGLA MAS IMPORTANTE: Responde lo mas corto posible. Maximo 2-3 oraciones. Si puedes decirlo en una oracion, mejor.",
+      "Usa espanol sencillo y directo. Palabras simples, oraciones cortas. Nada de rodeos ni explicaciones largas.",
+      "Da respuestas practicas y concretas. Ve al grano.",
+      "EXCEPCION: Si te piden un plan de clase, guia de actividad, o algo que requiere contenido largo:",
+      "- Empieza con 1-2 oraciones cortas de introduccion (ej: 'Aqui te va el plan de clase.').",
+      "- Luego pon una linea que diga exactamente: ---",
+      "- Despues del --- escribe el contenido largo con formato markdown (## titulos, listas, **negritas**, etc).",
+      "- El contenido despues del --- se le manda como archivo al profe.",
+      "Habla como un colega, no como un manual.",
+    ].join("\n");
 
     const resp = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -365,7 +370,7 @@ async function handleFreeformMessage(
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
-        max_tokens: 1000,
+        max_tokens: 3000,
         system: systemPrompt,
         messages: [{ role: "user", content: text }],
       }),
@@ -379,16 +384,115 @@ async function handleFreeformMessage(
 
     const data = await resp.json() as { content?: Array<{ text?: string }> };
     const answer = data.content?.map((b) => b.text || "").join("\n").trim();
-    if (answer) {
-      await reply(chatId, answer, identity);
-    } else {
+    if (!answer) {
       await reply(chatId, HELP_TEXT, identity);
+    } else {
+      const separatorIdx = answer.indexOf("\n---\n");
+      if (separatorIdx !== -1) {
+        const intro = answer.slice(0, separatorIdx).trim();
+        const longContent = answer.slice(separatorIdx + 5).trim();
+        if (intro) await reply(chatId, intro, identity);
+        await sendAsHtmlFile(chatId, longContent, identity);
+      } else {
+        await reply(chatId, answer, identity);
+      }
     }
   } catch (err) {
     console.error("[telegram] LLM call failed", err);
     await reply(chatId, HELP_TEXT, identity);
   }
   return {};
+}
+
+function markdownToHtml(md: string): string {
+  const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  const lines = md.split("\n");
+  const out: string[] = [];
+  let inCodeBlock = false;
+  let inList = false;
+
+  for (const raw of lines) {
+    if (raw.startsWith("```")) {
+      if (inList) { out.push("</ul>"); inList = false; }
+      inCodeBlock = !inCodeBlock;
+      out.push(inCodeBlock ? "<pre><code>" : "</code></pre>");
+      continue;
+    }
+    if (inCodeBlock) {
+      out.push(esc(raw));
+      continue;
+    }
+
+    let line = esc(raw);
+    line = line.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+    line = line.replace(/\*(.+?)\*/g, "<em>$1</em>");
+    line = line.replace(/`(.+?)`/g, "<code>$1</code>");
+
+    const headingMatch = line.match(/^(#{1,4})\s+(.+)$/);
+    if (headingMatch) {
+      if (inList) { out.push("</ul>"); inList = false; }
+      const level = headingMatch[1].length;
+      out.push(`<h${level}>${headingMatch[2]}</h${level}>`);
+      continue;
+    }
+
+    const listMatch = line.match(/^[-*]\s+(.+)$/);
+    if (listMatch) {
+      if (!inList) { out.push("<ul>"); inList = true; }
+      out.push(`<li>${listMatch[1]}</li>`);
+      continue;
+    }
+
+    const numberedMatch = line.match(/^\d+\.\s+(.+)$/);
+    if (numberedMatch) {
+      if (!inList) { out.push("<ul>"); inList = true; }
+      out.push(`<li>${numberedMatch[1]}</li>`);
+      continue;
+    }
+
+    if (inList) { out.push("</ul>"); inList = false; }
+
+    if (line.trim() === "") {
+      out.push("<br>");
+    } else {
+      out.push(`<p>${line}</p>`);
+    }
+  }
+  if (inList) out.push("</ul>");
+  if (inCodeBlock) out.push("</code></pre>");
+
+  return out.join("\n");
+}
+
+async function sendAsHtmlFile(
+  chatId: string,
+  markdown: string,
+  identity: TelegramIdentity,
+): Promise<void> {
+  const bodyHtml = markdownToHtml(markdown);
+
+  const html = `<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ColombiAndo</title>
+<style>
+body{font-family:system-ui,sans-serif;max-width:640px;margin:2rem auto;padding:0 1rem;line-height:1.6;color:#1a1a1a}
+h1,h2,h3,h4{color:#2d5016;margin:1.2em 0 0.4em}
+ul{padding-left:1.5rem}li{margin:0.3em 0}
+pre{background:#f4f4f4;padding:1rem;border-radius:6px;overflow-x:auto}
+code{background:#f4f4f4;padding:0.15em 0.3em;border-radius:3px;font-size:0.9em}
+pre code{background:none;padding:0}
+strong{color:#2d5016}
+</style>
+</head><body>${bodyHtml}</body></html>`;
+
+  await sendTelegramDocument({
+    chatId,
+    fileName: "colombiando.html",
+    fileBuffer: Buffer.from(html, "utf-8"),
+    teacherId: identity.teacherId,
+    providerUserId: identity.providerUserId,
+  });
 }
 
 function parseDuration(text: string): 1 | 2 | null {

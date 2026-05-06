@@ -68,6 +68,42 @@ export async function sendTelegramMessage(options: SendMessageOptions): Promise<
   }
 }
 
+type SendDocumentOptions = {
+  chatId: string;
+  fileName: string;
+  fileBuffer: Buffer;
+  caption?: string;
+  teacherId?: string;
+  providerUserId?: string;
+};
+
+export async function sendTelegramDocument(options: SendDocumentOptions): Promise<void> {
+  const form = new FormData();
+  form.append("chat_id", options.chatId);
+  form.append("document", new Blob([new Uint8Array(options.fileBuffer)]), options.fileName);
+  if (options.caption) form.append("caption", options.caption);
+
+  const resp = await fetch(`https://api.telegram.org/bot${botToken()}/sendDocument`, {
+    method: "POST",
+    body: form,
+    cache: "no-store",
+  });
+  const data = (await resp.json().catch(() => null)) as { ok?: boolean; description?: string } | null;
+  if (!resp.ok || !data?.ok) {
+    throw new Error(data?.description ?? `Telegram sendDocument failed with ${resp.status}`);
+  }
+
+  await logTelegramMessage({
+    ts: Date.now(),
+    direction: "out",
+    chatId: options.chatId,
+    teacherId: options.teacherId,
+    providerUserId: options.providerUserId,
+    text: `[file: ${options.fileName}]${options.caption ? ` ${options.caption}` : ""}`,
+    ok: true,
+  });
+}
+
 export async function setTelegramWebhook(webhookUrl: string, secretToken: string): Promise<unknown> {
   return telegramApi("setWebhook", {
     url: webhookUrl,
