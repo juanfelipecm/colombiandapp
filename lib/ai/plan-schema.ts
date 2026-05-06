@@ -3,7 +3,7 @@ import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 
 export const PROMPT_VERSION = "pbl-v1";
-export const PROMPT_MODEL = "claude-opus-4-7";
+export const PROMPT_MODEL = "claude-sonnet-4-6";
 export const PLAN_TOOL_NAME = "emit_plan";
 
 const dbaTokenSchema = z.string().regex(/^D\d+$/, "DBA token must match D<number>");

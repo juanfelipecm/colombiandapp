@@ -79,6 +79,7 @@ export function WizardClient({
         const validStudentIds = new Set(students.map((s) => s.id));
         const validGrades = new Set(availableGrades);
         const validMateriaIds = new Set(materias.map((m) => m.id));
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- Hydrates a persisted browser draft after mount.
         setState({
           step: (draft.step >= 1 && draft.step <= 4 ? draft.step : 1) as Step,
           selectedGrades: (draft.selectedGrades ?? availableGrades).filter((g) => validGrades.has(g)),
