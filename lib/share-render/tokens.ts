@@ -25,20 +25,28 @@ export const tokens = {
 
 export type GradeNumber = 1 | 2 | 3 | 4 | 5;
 
+/** Transición (grade 0) uses a neutral surface, like the app badge. */
 export function gradeBg(grade: number): string {
+  if (grade === 0) return tokens.hairline;
   return tokens[`grade${grade as GradeNumber}Bg` as keyof typeof tokens] ?? tokens.muted;
 }
 
 export function gradeText(grade: number): string {
+  if (grade === 0) return tokens.muted;
   return tokens[`grade${grade as GradeNumber}Text` as keyof typeof tokens] ?? tokens.black;
 }
 
+/**
+ * Fase accent (eyebrow, numeral, hairline). Muted brand tones — the grade
+ * text colors plus a 70% orange — so five fases don't shout (Juan, 2026-11-06).
+ */
 export function phaseColor(orden: number): string {
   switch (orden) {
-    case 1: return tokens.cYellow;
-    case 2: return tokens.cBlue;
-    case 3: return tokens.cGreen;
-    case 4: return tokens.cTeal;
+    case 1: return tokens.grade1Text;
+    case 2: return tokens.grade2Text;
+    case 3: return tokens.grade5Text;
+    case 4: return tokens.grade4Text;
+    case 5: return "rgba(255, 123, 23, 0.7)";
     default: return tokens.muted;
   }
 }
