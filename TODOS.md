@@ -1,5 +1,45 @@
 # TODOS
 
+## P2: Upgrade `@anthropic-ai/sdk`, enable `strict: true` on `emit_plan`, move to the Claude 5 family
+**What:** Bump the SDK from 0.70.1, add `strict: true` to the `emit_plan` tool, and move `PROMPT_MODEL` off `claude-opus-4-7`.
+**Why:** Strict tool schemas remove most structural (Zod) failures and therefore most retries. The current-generation models are the supported path going forward.
+**Effort:** M (CC: ~1 h + an eval run).
+**Priority:** P2
+**Depends on:** Clase Viva shipped and the eval baseline recorded (`npm run eval:prompt -- --all --runs 3`) so the model change can be compared against it.
+**Context:** Surfaced in /plan-eng-review 2026-11-06. SDK 0.70.1 has no `strict` field. Claude 5.x models reject forced `tool_choice` (`{type: "tool"}`) with a 400, so this is not a one-line model swap: it needs `tool_choice: auto` + a prompt instruction naming the tool + a "no tool call" retry path in `lib/ai/generate-project.ts`.
+
+## P2: `009_drop_pbl_v1.sql` cleanup migration
+**What:** Drop `project_activities`, `project_activity_dba_refs` and `check_activity_dba_ref_consistency`; drop `projects.duracion_semanas/producto_final/cierre_actividad/cierre_evaluacion` and `project_phases.dias_label/descripcion`; `SET NOT NULL` on `project_phases.etapa` and `bloques`; regenerate types (`npm run gen:types`).
+**Why:** 008 keeps these so legacy pbl-v1 rows survive. Once nothing reads them they are drift surface, and nullable etapa/bloques weaken the CHECKs.
+**Effort:** S (CC: ~20 min).
+**Priority:** P2
+**Depends on:** Deciding to delete legacy pbl-v1 projects (the `SET NOT NULL` fails while they exist). Juan's call.
+**Context:** Surfaced in /plan-eng-review 2026-11-06 (Clase Viva engine, D5/D14).
+
+## P3: Sweeper for `project_generation_logs` stuck in `pending`
+**What:** A scheduled job (Supabase cron or a Vercel cron route) that marks rows still `pending` after 10 minutes as `timeout` with `error_message = 'function terminated'`.
+**Why:** If the platform kills the function (300s cap, OOM, deploy mid-run) nothing writes the terminal status. The admin log keeps a phantom `pending` and nobody counts how often it happens.
+**Effort:** S (CC: ~30 min).
+**Priority:** P3
+**Depends on:** Nothing. Reuses the existing `timeout` status.
+**Context:** Pre-existing gap surfaced in /plan-eng-review 2026-11-06. The Clase Viva retry clamp + stream abort make it rare, not impossible.
+
+## P3: "Arte" as a selectable área
+**What:** Let teachers pick Arte in the wizard. All three reference Clase Viva projects list it among their áreas.
+**Why:** Teachers following the methodology's own examples will look for Arte and not find it.
+**Effort:** S after the decision (CC: ~30 min).
+**Priority:** P3
+**Depends on:** A curriculum decision: MEN publishes no DBA for Educación Artística, so `materias` has no Arte row and a DBA-less pair would need its own representation in the validator and the "DBA por grado" table.
+**Context:** Surfaced in /plan-eng-review 2026-11-06 reading the reference PDFs.
+
+## P3: Friendly page for legacy share links
+**What:** When `/api/proyectos/[id]/share-{image,pdf}` hits `no_phases` (archived pbl-v1 project), return a small branded HTML page (flag bar, "Este plan ya no está disponible. Pídele a tu colega la versión nueva.") instead of a bare 422.
+**Why:** A colleague opening an old link on a phone sees JSON at the one moment the app meets a new teacher.
+**Effort:** S (CC: ~15 min). `lib/share-render/route-helper.ts` already branches on `no_phases`.
+**Priority:** P3
+**Depends on:** Nothing.
+**Context:** Surfaced in /plan-design-review 2026-11-06. Only matters if pbl-v1 share links were actually sent around.
+
 ## P2: Build playwright auth-session helper
 **What:** Implement `tests/e2e/fixtures/auth.ts` per the pattern in `tests/e2e/README.md` (service-role JWT injection or storageState).
 **Why:** Five specs are currently `test.skip`-gated waiting on this: `wizard-happy-path`, `idempotency`, `backgrounding`, `admin-404`, and the new `share-image-authed.spec.ts` (added in the Satori rewrite). Without it we have no authenticated end-to-end coverage of the share render pipeline.
@@ -15,14 +55,6 @@
 **Priority:** P2
 **Depends on:** None — can be added any time.
 **Context:** Surfaced in /plan-eng-review 2026-05-03 (share-image plan). Deferred per "engineered enough" — current cache + Vercel concurrency limits handle today's load. Revisit at >100 DAU or first abuse signal.
-
-## P3: Kebab touch target below 44px guideline
-**What:** Bump `KebabMenu` button from `h-9 w-9` (36×36px) to `h-11 w-11` (44×44px) in `app/(app)/proyectos/[id]/project-view.tsx`. Audit other small icon buttons (BackLink chevron, DisclosureSection chevrons) for the same issue.
-**Why:** Pre-existing a11y concern flagged during plan-design-review Pass 6. WCAG 2.5.5 Target Size guideline says 44×44px minimum on touch surfaces.
-**Effort:** S (CC: ~10 min, single PR).
-**Priority:** P3
-**Depends on:** None.
-**Context:** Surfaced in /plan-design-review 2026-05-03. Out of scope for the share-image PR (different surface, different intent).
 
 ## P2: Write DESIGN.md via /design-consultation after PBL ships
 **What:** Run `/design-consultation` to produce a formal DESIGN.md documenting the design system that emerged from PBL implementation.

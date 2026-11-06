@@ -3,7 +3,7 @@
 Source of truth for every visual decision in the Colombiando app. Read this before changing UI. If you need to deviate, ask the user first and log the decision below.
 
 ## Product Context
-- **What this is:** A web app helping rural multigrade-school teachers in Colombia plan project-based learning. One teacher, one classroom, grades 1-5 simultaneously.
+- **What this is:** A web app helping rural multigrade-school teachers in Colombia plan projects with Colombiando's **Modelo Clase Viva** (an open pregunta guía + five fixed fases: Despertar la curiosidad, Indagar e investigar, Crear, Reflexionar, Compartir). One teacher, one classroom, Transición to 5° simultaneously.
 - **Who it's for:** Diana Molina-style users — teachers in rural Colombia, working from a phone after school, occasionally from a desktop browser.
 - **Space/industry:** Non-profit ed-tech. Spanish-language. Field-authentic.
 - **Project type:** Mobile-first, fully responsive web app (Next.js 16 + React 19 + Tailwind 4 + Supabase).
@@ -53,7 +53,7 @@ Desktop: bump `display` to 40/44 at `lg` (1024+).
 | `--surface-soft` | `#FAFAFA` | Input background, mobile content background |
 | `--border`   | `#EEEEEE`| Card borders, dividers |
 
-**Grade badge tokens** (semantic, mapped to Escuela Nueva grades 1-5):
+**Grade badge tokens** (semantic, mapped to Escuela Nueva grades 1-5; **Transición (grade 0)** uses a neutral surface: `bg-input-bg`, `text-text-secondary`, 1px border, label "Transición"):
 
 | Grade | bg        | text     |
 |-------|-----------|----------|
@@ -214,6 +214,14 @@ Use sparingly — at most one bubble per screen. Loses meaning if it appears on 
 ### 2. Yellow callout cards
 For curiosity prompts, info that adds context but isn't actionable. Yellow background, dark text, no tail (that's only for AI bubbles), 12px radius.
 
+### Project plan view: colour roles (Clase Viva)
+One colour, one meaning inside the plan view (`components/ui/callout.tsx`):
+- **Questions are blue** — pregunta guía and "Gran pregunta del día": bg `#DDEEFF`, 1.5px `--c-blue` border at 40%, 12px radius, 11px uppercase blue eyebrow with `CircleQuestionMark`.
+- **Profe tips are yellow** — bg `#FFF3D0`, 4px left border `--c-yellow`, `Lightbulb`, text verbatim.
+- **Tarea antes de empezar** — same yellow alert tint with `ClipboardList`, shown above Fase 1 until it is completed.
+- The yellow **speech bubble** stays the AI moment: only before teaching ("Empezar a enseñar") and after ("¿Funcionó?"), never mid-teaching.
+- Inside a fase card, layout not boxes: block label rows + paragraphs, grade bands as stacked rows with hairlines on phones (a 2-column table from `sm`). Never three yellow surfaces in one viewport.
+
 ### 3. The flag bar
 The 4px tri-color bar at the very top of the app (yellow 50% / blue 25% / red 25%) — already shipped in `components/ui/flag-bar.tsx`. Keep it on every authenticated screen. It's the most subtle Colombian signature in the system.
 
@@ -267,3 +275,7 @@ Four variants, distinguished by left border color and tinted background. Always 
 | 2026-04-26 | Speech bubble = AI moment only | Decorative restraint — used everywhere it loses meaning. One per screen max. |
 | 2026-04-26 | Long-form reading stays 1-column at any width | Comfortable measure (65-75ch) beats stretched-edge text |
 | 2026-04-26 | Dark mode deferred to v2 | Diana plans at night, would benefit, but foundation first. |
+| 2026-11-06 | Transición badge = neutral surface, no brand colour | Grade colours are already mapped to 1°–5°; a sixth brand colour would dilute them. |
+| 2026-11-06 | Plan view: questions blue (info tint), Profe tips yellow | Gran pregunta + tip + bubble were three yellow surfaces in one viewport; colour must mean one thing. |
+| 2026-11-06 | One anchor per status in the project view | Bubble only in generado/completado (kept hidden mid-teaching, commit 1e84100); while teaching the progress strip carries "Siguiente: Fase N" and the current fase opens itself. One primary action: that fase's Completar. |
+| 2026-11-06 | Share image = overview, PDF = full plan | A five-fase plan is ~3× longer; a full-length PNG is unreadable on WhatsApp. Fase accents in muted tones (grade text colours + 70% orange); logo always the image asset. |
