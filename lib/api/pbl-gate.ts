@@ -92,7 +92,7 @@ export async function checkDailyCap(admin: SupabaseClient, teacherId: string): P
       ok: false,
       status: 429,
       code: "daily_cap_reached",
-      message: "Has alcanzado tu límite diario de proyectos. Vuelve mañana.",
+      message: `Llegaste al límite de hoy (${DAILY_CAP_SUCCESS} proyectos). Mañana puedes crear más.`,
     };
   }
   return { ok: true };
