@@ -1,113 +1,98 @@
-import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
+import { cleanup, render, screen } from "@testing-library/react";
 import { Infographic } from "@/components/share/Infographic";
-import type { ShareData } from "@/lib/share-render/load-project";
+import { baseShareProject, makeShareData } from "../fixtures/share-data";
 
-const baseProject: ShareData["project"] = {
-  id: "p",
-  titulo: "Cómo cuidamos el agua de nuestro arroyo",
-  pregunta_guia: "¿Por qué el agua se ve diferente?",
-  duracion_semanas: 4,
-  producto_final: "Una guía ilustrada del cuidado del agua.",
-  cierre_actividad: "Presentación a la comunidad.",
-  cierre_evaluacion: "Rúbrica con 3 criterios.",
-  updated_at: "2026-05-03T00:00:00Z",
-};
+const EMOJI = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u;
+const props = { logoDataUrl: "data:image/png;base64,XXX", generatedAtLabel: "6 de noviembre de 2026", softCapped: false };
 
-function makeData(overrides: Partial<ShareData> = {}): ShareData {
-  return {
-    project: baseProject,
-    grados: [1, 2, 3],
-    studentCount: 18,
-    targetsByGrade: [
-      {
-        grado: 1,
-        items: [
-          { materia_nombre: "Lenguaje", materia_slug: "lenguaje", dba_numero: 3, enunciado: "Lee y comprende textos.", evidencia: "Resume el cuento." },
-          { materia_nombre: "Inglés", materia_slug: "ingles", dba_numero: 1, enunciado: "Saluda en inglés.", evidencia: "ESTA NO DEBE APARECER" },
-        ],
-      },
-    ],
-    phases: [
-      {
-        orden: 1,
-        nombre: "Sembrar la pregunta",
-        dias_label: "Semana 1",
-        descripcion: "Introducimos el reto y observamos.",
-        byGrade: [
-          {
-            grado: 1,
-            byMateria: [
-              { materia_nombre: "Lenguaje", materia_slug: "lenguaje", tarea: "Hacer un dibujo del arroyo.", evidencia_observable: "Dibujo entregado." },
-              { materia_nombre: "Inglés", materia_slug: "ingles", tarea: "Aprender 5 palabras.", evidencia_observable: "FANTASMA INGLÉS — NO MOSTRAR" },
-            ],
-          },
-        ],
-      },
-    ],
-    materiales: ["Cuaderno", "Lápiz", "Papel"],
-    ...overrides,
-  };
-}
+describe("Infographic — full (PDF)", () => {
+  afterEach(cleanup);
 
-describe("Infographic", () => {
-  it("renders all major sections", () => {
-    render(<Infographic data={makeData()} logoDataUrl="data:image/png;base64,XXX" generatedAtLabel="3 de mayo de 2026" softCapped={false} />);
-    expect(screen.getByText("PLAN DE PROYECTO")).toBeTruthy();
-    expect(screen.getByRole("heading", { name: /Cómo cuidamos el agua/ })).toBeTruthy();
-    expect(screen.getByText("EL RETO")).toBeTruthy();
-    expect(screen.getByRole("heading", { name: /Producto final/ })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: /Plan por fases/ })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: /DBAs y evidencias por grado/ })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: /Materiales/ })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: /Cierre del proyecto/ })).toBeTruthy();
+  it("renders the Clase Viva sections and no legacy ones", () => {
+    const { container } = render(<Infographic data={makeShareData()} {...props} />);
+    expect(screen.getByText("PLAN DE PROYECTO · CLASE VIVA")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: /panela/ })).toBeTruthy();
+    expect(screen.getByText("PREGUNTA GUÍA")).toBeTruthy();
+    expect(screen.getByText("TAREA ANTES DE EMPEZAR")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Las 5 fases" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "DBA por grado" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Materiales" })).toBeTruthy();
+    expect(container.textContent).not.toMatch(/Producto final|Cierre del proyecto|EL RETO|semana/);
   });
 
-  it("excludes evidencia for inglés materia in DBAs section", () => {
-    render(<Infographic data={makeData()} logoDataUrl="x" generatedAtLabel="x" softCapped={false} />);
+  it("keeps the editorial fase markers for all five fases", () => {
+    render(<Infographic data={makeShareData()} {...props} />);
+    for (let i = 1; i <= 5; i++) expect(screen.getByText(`FASE ${i}`)).toBeTruthy();
+    expect(screen.getByText("Indagar e investigar")).toBeTruthy();
+  });
+
+  it("renders gran pregunta, grade bands and the Profe tip", () => {
+    render(<Infographic data={makeShareData()} {...props} />);
+    expect(screen.getAllByText("GRAN PREGUNTA DEL DÍA")).toHaveLength(4);
+    expect(screen.getByText("Transición y 1°")).toBeTruthy();
+    expect(screen.getByText("2° y 3°")).toBeTruthy();
+    expect(screen.getByText(/^Profe, si no hay trapiche/)).toBeTruthy();
+  });
+
+  it("DBA tables per materia; no evidencia for Inglés; Transición badge", () => {
+    render(<Infographic data={makeShareData()} {...props} />);
+    expect(screen.getByText(/DBA #7 — Produce textos orales breves/)).toBeTruthy();
     expect(screen.getByText(/Saluda en inglés/)).toBeTruthy();
     expect(screen.queryByText(/ESTA NO DEBE APARECER/)).toBeNull();
+    expect(screen.getAllByText("Transición").length).toBeGreaterThan(0);
   });
 
-  it("excludes evidencia_observable for inglés in phase tasks", () => {
-    render(<Infographic data={makeData()} logoDataUrl="x" generatedAtLabel="x" softCapped={false} />);
-    expect(screen.queryByText(/FANTASMA INGLÉS/)).toBeNull();
+  it("cover: subtitle with Transición, áreas, 5 fases pill, singular niño", () => {
+    render(<Infographic data={makeShareData({ studentCount: 1 })} {...props} />);
+    expect(screen.getByText("Para Transición, 1°, 2° y 3°")).toBeTruthy();
+    expect(screen.getByText("Áreas: Lenguaje · Inglés")).toBeTruthy();
+    expect(screen.getByText("Transición a 3°")).toBeTruthy();
+    expect(screen.getByText("5 fases")).toBeTruthy();
+    expect(screen.getByText(/1 niño$/)).toBeTruthy();
   });
 
-  it("renders the soft-cap notice in the footer when softCapped=true", () => {
-    const { rerender } = render(<Infographic data={makeData()} logoDataUrl="x" generatedAtLabel="3 de mayo de 2026" softCapped={false} />);
+  it("no PDF notice in full mode unless soft-capped; no emoji", () => {
+    const { container, rerender } = render(<Infographic data={makeShareData()} {...props} />);
     expect(screen.queryByText(/PLAN COMPLETO EN EL PDF/)).toBeNull();
-
-    rerender(<Infographic data={makeData()} logoDataUrl="x" generatedAtLabel="3 de mayo de 2026" softCapped={true} />);
+    expect(EMOJI.test(container.textContent ?? "")).toBe(false);
+    rerender(<Infographic data={makeShareData()} {...props} softCapped />);
     expect(screen.getByText(/PLAN COMPLETO EN EL PDF/)).toBeTruthy();
   });
 
-  it("renders 'Para grados 1°, 2° y 3°' subtitle", () => {
-    render(<Infographic data={makeData()} logoDataUrl="x" generatedAtLabel="x" softCapped={false} />);
-    expect(screen.getByText(/Para grados 1°, 2° y 3°/)).toBeTruthy();
+  it("omits tarea previa when absent", () => {
+    render(<Infographic data={makeShareData({ project: { ...baseShareProject, tarea_previa: null } })} {...props} />);
+    expect(screen.queryByText("TAREA ANTES DE EMPEZAR")).toBeNull();
+  });
+});
+
+describe("Infographic — compact (share image)", () => {
+  afterEach(cleanup);
+
+  it("shows one row per fase: etapa eyebrow + per-project summary line", () => {
+    const { container } = render(<Infographic data={makeShareData()} {...props} compact />);
+    expect(screen.getByText("Despertar la curiosidad")).toBeTruthy();
+    expect(screen.getByText("¿Qué descubrimos sobre la panela en la fase 2?")).toBeTruthy();
+    // fase 5 has no gran pregunta → first sentence of its first activity
+    expect(screen.getByText("Pide a los estudiantes que se sienten en círculo para la fase 5.")).toBeTruthy();
+    expect(container.textContent).not.toMatch(/GRAN PREGUNTA DEL DÍA|Profe, si no hay trapiche/);
   });
 
-  it("renders editorial-magazine phase markers (eyebrow + numeral + hairline, no colored circles)", () => {
-    render(<Infographic data={makeData()} logoDataUrl="x" generatedAtLabel="x" softCapped={false} />);
-    // Editorial treatment: eyebrow text "FASE 1" and a separate numeral "1"
-    // both visible in the phases section. Hairline is a colored bar with no
-    // text — verified indirectly by the absence of an error and by the
-    // presence of the phase name immediately after the numeral.
-    expect(screen.getByText("FASE 1")).toBeTruthy();
-    expect(screen.getByText(/Sembrar la pregunta/)).toBeTruthy();
-  });
-
-  it("does NOT include any emoji glyphs (DESIGN.md hard rule)", () => {
-    const { container } = render(<Infographic data={makeData()} logoDataUrl="x" generatedAtLabel="x" softCapped={false} />);
-    const text = container.textContent ?? "";
-    const emojiRegex = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u;
-    expect(emojiRegex.test(text)).toBe(false);
-  });
-
-  it("singularizes 'semana' / 'niño' for count = 1", () => {
-    const data = makeData({ studentCount: 1, project: { ...baseProject, duracion_semanas: 1 } });
-    render(<Infographic data={data} logoDataUrl="x" generatedAtLabel="x" softCapped={false} />);
-    expect(screen.getByText(/1 niño$/)).toBeTruthy();
-    expect(screen.getByText(/1 semana$/)).toBeTruthy();
+  it("caps tarea previa, summarizes DBA per materia, drops materiales, always shows the PDF notice", () => {
+    const long = "Pide a los estudiantes " + "que pregunten en casa ".repeat(20);
+    render(
+      <Infographic
+        data={makeShareData({ project: { ...baseShareProject, tarea_previa: long } })}
+        {...props}
+        compact
+      />,
+    );
+    const tarea = screen.getByText(/^Pide a los estudiantes que pregunten/);
+    expect(tarea.textContent!.length).toBeLessThanOrEqual(140);
+    expect(tarea.textContent!.endsWith("…")).toBe(true);
+    expect(screen.getByText("Lenguaje · 2 DBA en 2 grados")).toBeTruthy();
+    expect(screen.getByText("Inglés · 1 DBA en 1 grado")).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "Materiales" })).toBeNull();
+    expect(screen.getByText(/PLAN COMPLETO EN EL PDF/)).toBeTruthy();
   });
 });

@@ -1,32 +1,46 @@
 // Refactored for Satori (no className/stylesheet — every style is inline).
-// Satori does not support pseudo-elements, CSS variables, CSS columns, or
-// stylesheets. Colors come from lib/share-render/tokens.ts so brand vs grade
-// hex values can't get conflated.
+// Satori does not support pseudo-elements, CSS variables, CSS columns, grid,
+// tables or stylesheets; every element with more than one child is a flex box
+// and every text node is the only child of its element. Colors come from
+// lib/share-render/tokens.ts so brand vs grade hex values can't get conflated.
+//
+// Two modes (D10):
+//   compact (share image, WhatsApp overview)       full (PDF)
+//   ─ Cover (logo, título, grados·áreas, pregunta)  ─ Cover
+//   ─ Tarea previa ≤140 chars                       ─ Tarea previa
+//   ─ 5 rows: numeral · etapa · summary line        ─ 5 fases: gran pregunta, bloques, bands, tips
+//   ─ DBA: one line per materia                     ─ DBA por grado tables per materia
+//   ─ Footer "PLAN COMPLETO EN EL PDF"              ─ Materiales · Footer
 /* eslint-disable @next/next/no-img-element */
 import type { CSSProperties } from "react";
-import type {
-  ShareData,
-  SharePhase,
-  ShareTargetsByGrade,
-} from "@/lib/share-render/load-project";
+import type { ShareData, SharePhase, ShareTargetsByMateria } from "@/lib/share-render/load-project";
+import {
+  BLOQUE_TIPO_LABEL,
+  faseSummaryLine,
+  splitParagraphs,
+  truncate,
+  type Bloque,
+  type ReadBloque,
+} from "@/lib/clase-viva/bloques";
+import { ETAPA_META, TOTAL_FASES } from "@/lib/clase-viva/etapas";
+import { formatGrado, formatGradosBand, formatGradosList } from "@/lib/clase-viva/grados";
 import { fitTitulo, fitPreguntaGuia } from "@/lib/share-render/text-fit";
 import { tokens, gradeBg, gradeText, phaseColor } from "@/lib/share-render/tokens";
 
 const FONT = "Montserrat";
+export const COMPACT_TAREA_MAX = 140;
+export const COMPACT_FASE_LINE_MAX = 90;
 
 type InfographicProps = {
   data: ShareData;
   logoDataUrl: string;
   generatedAtLabel: string;
   softCapped: boolean;
+  /** Share image = compact overview; PDF = full plan. */
+  compact?: boolean;
 };
 
-export function Infographic({
-  data,
-  logoDataUrl,
-  generatedAtLabel,
-  softCapped,
-}: InfographicProps) {
+export function Infographic({ data, logoDataUrl, generatedAtLabel, softCapped, compact = false }: InfographicProps) {
   return (
     <div
       style={{
@@ -40,18 +54,18 @@ export function Infographic({
     >
       <FlagBar />
       <Cover data={data} logoDataUrl={logoDataUrl} />
-      <ProductoFinal text={data.project.producto_final} />
-      <PhasesSection phases={data.phases} />
-      <DbasSection groups={data.targetsByGrade} />
-      <MaterialesSection items={data.materiales} />
-      <CierreSection
-        actividad={data.project.cierre_actividad}
-        evaluacion={data.project.cierre_evaluacion}
-      />
+      {data.project.tarea_previa ? (
+        <TareaPreviaSection
+          text={compact ? truncate(data.project.tarea_previa, COMPACT_TAREA_MAX) : data.project.tarea_previa}
+        />
+      ) : null}
+      <PhasesSection phases={data.phases} compact={compact} />
+      <DbasSection groups={data.targetsByMateria} compact={compact} />
+      {compact ? null : <MaterialesSection items={data.materiales} />}
       <Footer
         logoDataUrl={logoDataUrl}
         generatedAtLabel={generatedAtLabel}
-        softCapped={softCapped}
+        showPdfNotice={compact || softCapped}
       />
       <FlagBar />
     </div>
@@ -68,16 +82,15 @@ function FlagBar() {
   );
 }
 
-function gradesLabel(grados: number[]): string {
-  return grados.map((g) => `${g}°`).join(" · ");
-}
-
 function gradosSubtitle(grados: number[]): string {
   if (grados.length === 0) return "";
-  if (grados.length === 1) return `Para grado ${grados[0]}°`;
-  if (grados.length === 2) return `Para grados ${grados[0]}° y ${grados[1]}°`;
-  const init = grados.slice(0, -1).map((g) => `${g}°`).join(", ");
-  return `Para grados ${init} y ${grados[grados.length - 1]}°`;
+  return `Para ${grados.length === 1 && grados[0] !== 0 ? "grado " : ""}${formatGradosList(grados)}`;
+}
+
+function gradosRange(grados: number[]): string {
+  const sorted = [...grados].sort((a, b) => a - b);
+  if (sorted.length <= 2) return formatGradosBand(sorted);
+  return `${formatGrado(sorted[0])} a ${formatGrado(sorted[sorted.length - 1])}`;
 }
 
 const sectionStyle: CSSProperties = {
@@ -95,19 +108,38 @@ const sectionHeadingStyle: CSSProperties = {
   letterSpacing: "-0.01em",
 };
 
+const eyebrowStyle: CSSProperties = {
+  fontWeight: 700,
+  fontSize: 14,
+  textTransform: "uppercase",
+  letterSpacing: "0.06em",
+  color: tokens.muted,
+  margin: 0,
+};
+
+function Paragraphs({ text, size = 20, color = tokens.black }: { text: string; size?: number; color?: string }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column" }}>
+      {splitParagraphs(text).map((p, i, arr) => (
+        <div
+          key={i}
+          style={{ fontSize: size, lineHeight: 1.45, color, margin: 0, marginBottom: i === arr.length - 1 ? 0 : 10 }}
+        >
+          {p}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function Cover({ data, logoDataUrl }: { data: ShareData; logoDataUrl: string }) {
-  const { project, grados, studentCount } = data;
+  const { project, grados, studentCount, materias } = data;
   const tituloSize = fitTitulo(project.titulo);
   const preguntaSize = fitPreguntaGuia(project.pregunta_guia);
+  const areas = materias.map((m) => m.nombre).join(" · ");
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        padding: "40px 56px 48px",
-      }}
-    >
+    <div style={{ display: "flex", flexDirection: "column", padding: "40px 56px 48px" }}>
       <div
         style={{
           display: "flex",
@@ -117,7 +149,7 @@ function Cover({ data, logoDataUrl }: { data: ShareData; logoDataUrl: string }) 
           marginBottom: 32,
         }}
       >
-        <img src={logoDataUrl} alt="Colombiando" style={{ height: 80, width: "auto" }} />
+        <img src={logoDataUrl} alt="Colombiando" width={318} height={64} style={{ height: 64, width: 318 }} />
         <div
           style={{
             fontWeight: 700,
@@ -129,7 +161,7 @@ function Cover({ data, logoDataUrl }: { data: ShareData; logoDataUrl: string }) 
             paddingTop: 12,
           }}
         >
-          PLAN DE PROYECTO
+          PLAN DE PROYECTO · CLASE VIVA
         </div>
       </div>
 
@@ -146,46 +178,35 @@ function Cover({ data, logoDataUrl }: { data: ShareData; logoDataUrl: string }) 
       >
         {project.titulo}
       </h1>
-      <div
-        style={{
-          fontWeight: 600,
-          fontSize: 22,
-          color: tokens.muted,
-          margin: 0,
-          marginBottom: 32,
-        }}
-      >
+      <div style={{ fontWeight: 600, fontSize: 22, color: tokens.muted, margin: 0, marginBottom: areas ? 6 : 32 }}>
         {gradosSubtitle(grados)}
       </div>
+      {areas ? (
+        <div style={{ fontWeight: 400, fontSize: 20, color: tokens.muted, margin: 0, marginBottom: 32 }}>
+          {`Áreas: ${areas}`}
+        </div>
+      ) : null}
 
       <Bubble preguntaGuia={project.pregunta_guia} preguntaSize={preguntaSize} />
 
       <div style={{ display: "flex", flexDirection: "row", gap: 16 }}>
-        <Pill bg={tokens.cYellow}>{gradesLabel(grados)}</Pill>
+        <Pill bg={tokens.cYellow}>
+          <span>{gradosRange(grados)}</span>
+        </Pill>
         <Pill bg={tokens.cBlue}>
-          <CalendarIcon />
-          <span style={{ marginLeft: 8 }}>
-            {`${project.duracion_semanas} ${project.duracion_semanas === 1 ? "semana" : "semanas"}`}
-          </span>
+          <LayersIcon />
+          <span style={{ marginLeft: 8 }}>{`${TOTAL_FASES} fases`}</span>
         </Pill>
         <Pill bg={tokens.cGreen}>
           <UsersIcon />
-          <span style={{ marginLeft: 8 }}>
-            {`${studentCount} ${studentCount === 1 ? "niño" : "niños"}`}
-          </span>
+          <span style={{ marginLeft: 8 }}>{`${studentCount} ${studentCount === 1 ? "niño" : "niños"}`}</span>
         </Pill>
       </div>
     </div>
   );
 }
 
-function Bubble({
-  preguntaGuia,
-  preguntaSize,
-}: {
-  preguntaGuia: string;
-  preguntaSize: number;
-}) {
+function Bubble({ preguntaGuia, preguntaSize }: { preguntaGuia: string; preguntaSize: number }) {
   return (
     <div
       style={{
@@ -215,20 +236,11 @@ function Bubble({
         }}
       >
         <SparklesIcon />
-        <span>EL RETO</span>
+        <span>PREGUNTA GUÍA</span>
       </div>
-      <div
-        style={{
-          fontWeight: 600,
-          fontSize: preguntaSize,
-          color: tokens.black,
-          lineHeight: 1.25,
-          margin: 0,
-        }}
-      >
+      <div style={{ fontWeight: 600, fontSize: preguntaSize, color: tokens.black, lineHeight: 1.25, margin: 0 }}>
         {preguntaGuia}
       </div>
-      {/* Black outline triangle (back) */}
       <div
         style={{
           position: "absolute",
@@ -241,7 +253,6 @@ function Bubble({
           borderTop: `16px solid ${tokens.black}`,
         }}
       />
-      {/* Yellow triangle (front, inset to expose 2px of black outline) */}
       <div
         style={{
           position: "absolute",
@@ -280,43 +291,61 @@ function Pill({ bg, children }: { bg: string; children: React.ReactNode }) {
   );
 }
 
-function ProductoFinal({ text }: { text: string }) {
+function TareaPreviaSection({ text }: { text: string }) {
   return (
     <div style={sectionStyle}>
-      <h2 style={sectionHeadingStyle}>Producto final</h2>
       <div
         style={{
           display: "flex",
-          background: tokens.grade2Bg,
-          borderBottom: `4px solid ${tokens.black}`,
+          flexDirection: "column",
+          background: tokens.grade1Bg,
+          borderLeft: `6px solid ${tokens.cYellow}`,
           borderRadius: 12,
-          padding: "28px 28px 30px",
+          padding: "20px 24px",
         }}
       >
-        <div
-          style={{
-            fontWeight: 400,
-            fontSize: 28,
-            lineHeight: 1.45,
-            margin: 0,
-            color: tokens.black,
-          }}
-        >
-          {text}
-        </div>
+        <div style={{ ...eyebrowStyle, color: tokens.grade1Text, marginBottom: 8 }}>TAREA ANTES DE EMPEZAR</div>
+        <Paragraphs text={text} />
       </div>
     </div>
   );
 }
 
-function PhasesSection({ phases }: { phases: SharePhase[] }) {
+function PhasesSection({ phases, compact }: { phases: SharePhase[]; compact: boolean }) {
   return (
     <div style={sectionStyle}>
-      <h2 style={sectionHeadingStyle}>Plan por fases</h2>
+      <h2 style={sectionHeadingStyle}>{`Las ${TOTAL_FASES} fases`}</h2>
       <div style={{ display: "flex", flexDirection: "column" }}>
-        {phases.map((p) => (
-          <PhaseBlock key={p.orden} phase={p} />
-        ))}
+        {phases.map((p) =>
+          compact ? <PhaseRow key={p.orden} phase={p} /> : <PhaseBlock key={p.orden} phase={p} />,
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Compact overview row: muted numeral + hairline, etapa eyebrow, per-project summary line (DR4). */
+function PhaseRow({ phase }: { phase: SharePhase }) {
+  const color = phaseColor(phase.orden);
+  const line = faseSummaryLine(phase, COMPACT_FASE_LINE_MAX);
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "row",
+        alignItems: "flex-start",
+        gap: 28,
+        paddingBottom: 18,
+        marginBottom: 18,
+        borderBottom: `2px solid ${color}`,
+      }}
+    >
+      <div style={{ fontWeight: 400, fontSize: 88, lineHeight: 1, color, width: 72, letterSpacing: "-0.04em" }}>
+        {String(phase.orden)}
+      </div>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", paddingTop: 6 }}>
+        <div style={{ ...eyebrowStyle, marginBottom: 8 }}>{ETAPA_META[phase.etapa].nombre}</div>
+        <div style={{ fontWeight: 700, fontSize: 26, lineHeight: 1.3, color: tokens.black }}>{line}</div>
       </div>
     </div>
   );
@@ -325,28 +354,8 @@ function PhasesSection({ phases }: { phases: SharePhase[] }) {
 function PhaseBlock({ phase }: { phase: SharePhase }) {
   const color = phaseColor(phase.orden);
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        marginBottom: 36,
-        paddingBottom: 4,
-      }}
-    >
-      <div
-        style={{
-          fontWeight: 700,
-          fontSize: 14,
-          textTransform: "uppercase",
-          letterSpacing: "0.06em",
-          margin: 0,
-          marginBottom: 4,
-          lineHeight: 1,
-          color,
-        }}
-      >
-        {`FASE ${phase.orden}`}
-      </div>
+    <div style={{ display: "flex", flexDirection: "column", marginBottom: 40, paddingBottom: 4 }}>
+      <div style={{ ...eyebrowStyle, color, marginBottom: 4, lineHeight: 1 }}>{`FASE ${phase.orden}`}</div>
       <div
         style={{
           fontWeight: 700,
@@ -360,178 +369,162 @@ function PhaseBlock({ phase }: { phase: SharePhase }) {
         {String(phase.orden)}
       </div>
       <div style={{ height: 4, width: "100%", margin: "8px 0 16px", background: color }} />
-      <div
-        style={{
-          fontWeight: 700,
-          fontSize: 28,
-          color: tokens.black,
-          margin: 0,
-          marginBottom: 4,
-          lineHeight: 1.1,
-        }}
-      >
+      <div style={{ fontWeight: 700, fontSize: 28, color: tokens.black, margin: 0, marginBottom: 16, lineHeight: 1.1 }}>
         {phase.nombre}
       </div>
-      <div
-        style={{
-          fontWeight: 600,
-          fontSize: 14,
-          textTransform: "uppercase",
-          letterSpacing: "0.06em",
-          color: tokens.muted,
-          margin: 0,
-          marginBottom: 12,
-        }}
-      >
-        {phase.dias_label}
-      </div>
-      <div
-        style={{
-          fontSize: 22,
-          lineHeight: 1.5,
-          margin: 0,
-          marginBottom: 20,
-          color: tokens.black,
-        }}
-      >
-        {phase.descripcion}
-      </div>
+      {phase.gran_pregunta ? <GranPregunta text={phase.gran_pregunta} /> : null}
       <div style={{ display: "flex", flexDirection: "column" }}>
-        {phase.byGrade.map((g, idx) => (
-          <div
-            key={g.grado}
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              gap: 16,
-              alignItems: "flex-start",
-              padding: "12px 0",
-              borderTop: idx === 0 ? "none" : `1px solid ${tokens.hairline}`,
-            }}
-          >
-            <div style={{ display: "flex", paddingTop: 4 }}>
-              <ShareGradeBadge grade={g.grado} />
-            </div>
-            <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-              {g.byMateria.map((m, mIdx) => (
-                <div
-                  key={m.materia_slug}
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    marginBottom: mIdx === g.byMateria.length - 1 ? 0 : 14,
-                  }}
-                >
-                  <div
-                    style={{
-                      fontWeight: 700,
-                      fontSize: 20,
-                      color: tokens.black,
-                      margin: 0,
-                      marginBottom: 4,
-                    }}
-                  >
-                    {m.materia_nombre}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 20,
-                      lineHeight: 1.45,
-                      margin: 0,
-                      marginBottom: 4,
-                      color: tokens.black,
-                    }}
-                  >
-                    {m.tarea}
-                  </div>
-                  {m.evidencia_observable && m.materia_slug !== "ingles" ? (
-                    <div
-                      style={{
-                        fontSize: 17,
-                        lineHeight: 1.4,
-                        color: tokens.muted,
-                        margin: 0,
-                      }}
-                    >
-                      {`Evidencia observable: ${m.evidencia_observable}`}
-                    </div>
-                  ) : null}
-                </div>
-              ))}
-            </div>
-          </div>
+        {phase.bloques.map((b, i) => (
+          <ShareBloque key={i} bloque={b} />
         ))}
       </div>
     </div>
   );
 }
 
-function DbasSection({ groups }: { groups: ShareTargetsByGrade }) {
+function GranPregunta({ text }: { text: string }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        background: "#DDEEFF",
+        borderRadius: 12,
+        padding: "18px 22px",
+        marginBottom: 20,
+      }}
+    >
+      <div style={{ ...eyebrowStyle, color: tokens.cBlue, marginBottom: 8 }}>GRAN PREGUNTA DEL DÍA</div>
+      <div style={{ fontWeight: 600, fontSize: 24, lineHeight: 1.3, color: tokens.black }}>{text}</div>
+    </div>
+  );
+}
+
+function ShareBloque({ bloque }: { bloque: ReadBloque }) {
+  if (bloque.tipo === "invalido") {
+    return (
+      <div style={{ fontSize: 18, color: tokens.muted, marginBottom: 18 }}>
+        Este bloque no se pudo mostrar.
+      </div>
+    );
+  }
+  const b = bloque as Bloque;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", marginBottom: 22 }}>
+      <div style={{ ...eyebrowStyle, marginBottom: 8 }}>{(b.titulo || BLOQUE_TIPO_LABEL[b.tipo]).toUpperCase()}</div>
+      <Paragraphs text={b.contenido} />
+      {b.variantes_por_grado && b.variantes_por_grado.length > 0 ? (
+        <div style={{ display: "flex", flexDirection: "column", marginTop: 12 }}>
+          {[...b.variantes_por_grado]
+            .sort((x, y) => Math.min(...x.grados) - Math.min(...y.grados))
+            .map((v, i) => {
+              const first = Math.min(...v.grados);
+              return (
+                <div
+                  key={i}
+                  style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    gap: 20,
+                    padding: "12px 0",
+                    borderTop: i === 0 ? "none" : `1px solid ${tokens.hairline}`,
+                  }}
+                >
+                  <div style={{ display: "flex", width: 200 }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        borderRadius: 9999,
+                        padding: "6px 14px",
+                        fontWeight: 700,
+                        fontSize: 15,
+                        lineHeight: 1,
+                        background: gradeBg(first),
+                        color: gradeText(first),
+                      }}
+                    >
+                      {formatGradosBand(v.grados)}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", flex: 1 }}>
+                    <Paragraphs text={v.contenido} size={19} />
+                  </div>
+                </div>
+              );
+            })}
+        </div>
+      ) : null}
+      {b.tip_profe ? (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            gap: 12,
+            marginTop: 14,
+            background: tokens.grade1Bg,
+            borderLeft: `6px solid ${tokens.cYellow}`,
+            borderRadius: 12,
+            padding: "16px 20px",
+          }}
+        >
+          <div style={{ display: "flex", color: tokens.grade1Text, paddingTop: 2 }}>
+            <LightbulbIcon />
+          </div>
+          <div style={{ display: "flex", flex: 1 }}>
+            <Paragraphs text={b.tip_profe} size={19} />
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function DbasSection({ groups, compact }: { groups: ShareTargetsByMateria; compact: boolean }) {
   if (groups.length === 0) return null;
   return (
     <div style={sectionStyle}>
-      <h2 style={sectionHeadingStyle}>DBAs y evidencias por grado</h2>
+      <h2 style={sectionHeadingStyle}>DBA por grado</h2>
       <div style={{ display: "flex", flexDirection: "column" }}>
-        {groups.map((g) => (
-          <div
-            key={g.grado}
-            style={{ display: "flex", flexDirection: "column", marginBottom: 28 }}
-          >
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "row",
-                gap: 16,
-                alignItems: "flex-start",
-                marginBottom: 12,
-              }}
-            >
-              <ShareGradeBadge grade={g.grado} />
+        {groups.map((g) =>
+          compact ? (
+            <div key={g.materia_id} style={{ fontSize: 22, lineHeight: 1.4, marginBottom: 8, color: tokens.black }}>
+              {`${g.materia_nombre} · ${g.rows.length} DBA en ${new Set(g.rows.map((r) => r.grado)).size} ${
+                new Set(g.rows.map((r) => r.grado)).size === 1 ? "grado" : "grados"
+              }`}
             </div>
-            <div style={{ display: "flex", flexDirection: "column" }}>
-              {g.items.map((item, idx) => (
+          ) : (
+            <div key={g.materia_id} style={{ display: "flex", flexDirection: "column", marginBottom: 28 }}>
+              <div style={{ fontWeight: 700, fontSize: 24, marginBottom: 12, color: tokens.black }}>{g.materia_nombre}</div>
+              {g.rows.map((r, idx) => (
                 <div
-                  key={`${g.grado}-${item.materia_slug}-${idx}`}
+                  key={`${g.materia_id}-${r.grado}-${idx}`}
                   style={{
                     display: "flex",
-                    flexDirection: "column",
-                    marginBottom: idx === g.items.length - 1 ? 0 : 16,
+                    flexDirection: "row",
+                    gap: 16,
+                    alignItems: "flex-start",
+                    padding: "10px 0",
+                    borderTop: idx === 0 ? "none" : `1px solid ${tokens.hairline}`,
                   }}
                 >
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "row",
-                      flexWrap: "wrap",
-                      fontSize: 20,
-                      lineHeight: 1.45,
-                      margin: 0,
-                      marginBottom: 4,
-                      color: tokens.black,
-                    }}
-                  >
-                    <span style={{ fontWeight: 700, marginRight: 6 }}>
-                      {`${item.materia_nombre}:`}
-                    </span>
-                    <span>{`DBA #${item.dba_numero} — ${item.enunciado}`}</span>
+                  <div style={{ display: "flex", width: 150, paddingTop: 2 }}>
+                    <ShareGradeBadge grade={r.grado} />
                   </div>
-                  {item.evidencia && item.materia_slug !== "ingles" ? (
-                    <div
-                      style={{
-                        fontSize: 17,
-                        lineHeight: 1.4,
-                        color: tokens.muted,
-                        margin: 0,
-                      }}
-                    >
-                      {`Evidencia: ${item.evidencia}`}
+                  <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+                    <div style={{ fontSize: 20, lineHeight: 1.45, color: tokens.black }}>
+                      {`DBA #${r.dba_numero} — ${r.enunciado}`}
                     </div>
-                  ) : null}
+                    {r.evidencia && g.materia_slug !== "ingles" ? (
+                      <div style={{ fontSize: 17, lineHeight: 1.4, color: tokens.muted, marginTop: 4 }}>
+                        {`Evidencia: ${r.evidencia}`}
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
               ))}
             </div>
-          </div>
-        ))}
+          ),
+        )}
       </div>
     </div>
   );
@@ -539,17 +532,14 @@ function DbasSection({ groups }: { groups: ShareTargetsByGrade }) {
 
 function MaterialesSection({ items }: { items: string[] }) {
   if (items.length === 0) return null;
-  // Two-column flex (Satori has no `columns: 2`). Split items L/R round-robin
-  // for visual balance — follows the natural reading order column-by-column.
+  // Two-column flex (Satori has no `columns: 2`).
   const half = Math.ceil(items.length / 2);
-  const left = items.slice(0, half);
-  const right = items.slice(half);
   return (
     <div style={sectionStyle}>
       <h2 style={sectionHeadingStyle}>Materiales</h2>
       <div style={{ display: "flex", flexDirection: "row", gap: 32 }}>
-        <MaterialesColumn items={left} />
-        <MaterialesColumn items={right} />
+        <MaterialesColumn items={items.slice(0, half)} />
+        <MaterialesColumn items={items.slice(half)} />
       </div>
     </div>
   );
@@ -559,16 +549,7 @@ function MaterialesColumn({ items }: { items: string[] }) {
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
       {items.map((m, i) => (
-        <div
-          key={i}
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            marginBottom: 10,
-            fontSize: 20,
-            lineHeight: 1.4,
-          }}
-        >
+        <div key={i} style={{ display: "flex", flexDirection: "row", marginBottom: 10, fontSize: 20, lineHeight: 1.4 }}>
           <span style={{ marginRight: 10 }}>•</span>
           <span style={{ flex: 1 }}>{m}</span>
         </div>
@@ -577,88 +558,18 @@ function MaterialesColumn({ items }: { items: string[] }) {
   );
 }
 
-function CierreSection({
-  actividad,
-  evaluacion,
-}: {
-  actividad: string;
-  evaluacion: string;
-}) {
-  return (
-    <div style={sectionStyle}>
-      <h2 style={sectionHeadingStyle}>Cierre del proyecto</h2>
-      <div style={{ display: "flex", flexDirection: "column", marginBottom: 20 }}>
-        <div
-          style={{
-            fontWeight: 700,
-            fontSize: 14,
-            textTransform: "uppercase",
-            letterSpacing: "0.06em",
-            color: tokens.muted,
-            margin: 0,
-            marginBottom: 6,
-          }}
-        >
-          ACTIVIDAD
-        </div>
-        <div
-          style={{
-            fontSize: 22,
-            lineHeight: 1.5,
-            margin: 0,
-            color: tokens.black,
-          }}
-        >
-          {actividad}
-        </div>
-      </div>
-      <div style={{ display: "flex", flexDirection: "column" }}>
-        <div
-          style={{
-            fontWeight: 700,
-            fontSize: 14,
-            textTransform: "uppercase",
-            letterSpacing: "0.06em",
-            color: tokens.muted,
-            margin: 0,
-            marginBottom: 6,
-          }}
-        >
-          EVALUACIÓN
-        </div>
-        <div
-          style={{
-            fontSize: 22,
-            lineHeight: 1.5,
-            margin: 0,
-            color: tokens.black,
-          }}
-        >
-          {evaluacion}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function Footer({
   logoDataUrl,
   generatedAtLabel,
-  softCapped,
+  showPdfNotice,
 }: {
   logoDataUrl: string;
   generatedAtLabel: string;
-  softCapped: boolean;
+  showPdfNotice: boolean;
 }) {
   return (
-    <footer
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        padding: "32px 56px 24px",
-      }}
-    >
-      {softCapped ? (
+    <footer style={{ display: "flex", flexDirection: "column", padding: "32px 56px 24px" }}>
+      {showPdfNotice ? (
         <div
           style={{
             fontWeight: 700,
@@ -673,21 +584,11 @@ function Footer({
           PLAN COMPLETO EN EL PDF · descárgalo desde la app
         </div>
       ) : null}
-      <img src={logoDataUrl} alt="" style={{ height: 48, width: "auto", marginBottom: 12 }} />
-      <div
-        style={{
-          fontWeight: 600,
-          fontSize: 18,
-          color: tokens.muted,
-          margin: 0,
-          marginBottom: 6,
-        }}
-      >
-        colombiando.app · Plan generado con IA para escuelas multigrado
+      <img src={logoDataUrl} alt="" width={238} height={48} style={{ height: 48, width: 238, marginBottom: 12 }} />
+      <div style={{ fontWeight: 600, fontSize: 18, color: tokens.muted, margin: 0, marginBottom: 6 }}>
+        colombiando.app · Plan Clase Viva generado con IA para escuelas multigrado
       </div>
-      <div style={{ fontSize: 14, color: tokens.muted, margin: 0 }}>
-        {`Generado el ${generatedAtLabel}`}
-      </div>
+      <div style={{ fontSize: 14, color: tokens.muted, margin: 0 }}>{`Generado el ${generatedAtLabel}`}</div>
     </footer>
   );
 }
@@ -708,7 +609,7 @@ function ShareGradeBadge({ grade }: { grade: number }) {
         color: gradeText(grade),
       }}
     >
-      {`${grade}° grado`}
+      {grade === 0 ? formatGrado(0) : `${grade}° grado`}
     </div>
   );
 }
@@ -734,22 +635,36 @@ function SparklesIcon() {
   );
 }
 
-function CalendarIcon() {
+function LayersIcon() {
   return (
     <svg viewBox="0 0 24 24" width="18" height="18">
-      <path d="M8 2v4" stroke="currentColor" fill="none" strokeWidth="2" strokeLinecap="round" />
-      <path d="M16 2v4" stroke="currentColor" fill="none" strokeWidth="2" strokeLinecap="round" />
-      <rect
-        width="18"
-        height="18"
-        x="3"
-        y="4"
-        rx="2"
+      <path
+        d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"
         stroke="currentColor"
         fill="none"
         strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
-      <path d="M3 10h18" stroke="currentColor" fill="none" strokeWidth="2" strokeLinecap="round" />
+      <path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65" stroke="currentColor" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65" stroke="currentColor" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function LightbulbIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="22" height="22">
+      <path
+        d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"
+        stroke="currentColor"
+        fill="none"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="M9 18h6" stroke="currentColor" fill="none" strokeWidth="2" strokeLinecap="round" />
+      <path d="M10 22h4" stroke="currentColor" fill="none" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }
@@ -766,20 +681,8 @@ function UsersIcon() {
         strokeLinejoin="round"
       />
       <circle cx="9" cy="7" r="4" stroke="currentColor" fill="none" strokeWidth="2" />
-      <path
-        d="M22 21v-2a4 4 0 0 0-3-3.87"
-        stroke="currentColor"
-        fill="none"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      <path
-        d="M16 3.13a4 4 0 0 1 0 7.75"
-        stroke="currentColor"
-        fill="none"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" fill="none" strokeWidth="2" strokeLinecap="round" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" fill="none" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }

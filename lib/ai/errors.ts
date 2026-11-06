@@ -2,10 +2,65 @@ export type ValidationIssue =
   | { kind: "zod_parse"; message: string; path?: (string | number)[] }
   | { kind: "unknown_token"; token: string; where: string }
   | { kind: "missing_cross_product"; grado: number; materia_id: string }
-  | { kind: "activity_token_not_in_targets"; token: string; grado: number; materia_id: string }
+  | { kind: "target_token_wrong_pair"; token: string; grado: number; materia_id: string }
   | { kind: "evidencia_index_out_of_range"; token: string; index: number }
   | { kind: "evidencia_required_for_non_ingles"; token: string }
-  | { kind: "duplicate_dba_target"; grado: number; materia_id: string; dba_id: string };
+  | { kind: "duplicate_dba_target"; grado: number; materia_id: string; dba_id: string }
+  | { kind: "duplicate_target_pair"; grado: number; materia_id: string }
+  | { kind: "etapa_orden_mismatch"; index: number; expected_etapa: string; got_etapa: string; got_orden: number }
+  | { kind: "variantes_required"; fase: number; bloque: number }
+  | { kind: "variantes_unexpected"; fase: number; bloque: number; tipo: string }
+  | {
+      kind: "variantes_not_partition";
+      fase: number;
+      bloque: number;
+      missing: number[];
+      extra: number[];
+      duplicated: number[];
+    }
+  | { kind: "variantes_single_grade"; fase: number; bloque: number };
+
+const MAX_HINT_ISSUES = 8;
+
+function g(n: number): string {
+  return n === 0 ? "Transición" : `${n}°`;
+}
+
+export function describeIssue(issue: ValidationIssue): string {
+  switch (issue.kind) {
+    case "zod_parse":
+      return `- Error de forma en ${(issue.path ?? []).join(".") || "(raíz)"}: ${issue.message}`;
+    case "unknown_token":
+      return `- Usaste el token ${issue.token} en ${issue.where}, pero no está en la lista de DBA permitidos.`;
+    case "missing_cross_product":
+      return `- Falta dba_targets para (grado=${issue.grado}, materia_id=${issue.materia_id}). Cada par (grado × materia) necesita 1-2 DBA.`;
+    case "target_token_wrong_pair":
+      return `- El token ${issue.token} no pertenece al par (grado=${issue.grado}, materia_id=${issue.materia_id}). Usa solo los DBA listados para ese par.`;
+    case "evidencia_index_out_of_range":
+      return `- evidencia_index ${issue.index} no existe para el DBA ${issue.token}.`;
+    case "evidencia_required_for_non_ingles":
+      return `- El DBA ${issue.token} no es de Inglés: evidencia_index no puede ser null.`;
+    case "duplicate_dba_target":
+      return `- DBA repetido en (grado=${issue.grado}, materia_id=${issue.materia_id}). Cada par lleva 1-2 DBA distintos.`;
+    case "duplicate_target_pair":
+      return `- El par (grado=${issue.grado}, materia_id=${issue.materia_id}) aparece más de una vez en dba_targets. Usa una sola entrada por par con 1-2 DBA.`;
+    case "etapa_orden_mismatch":
+      return `- fases[${issue.index}] debe tener orden ${issue.index + 1} y etapa '${issue.expected_etapa}', pero tiene orden ${issue.got_orden} y etapa '${issue.got_etapa}'.`;
+    case "variantes_required":
+      return `- Fase ${issue.fase}, bloque ${issue.bloque + 1}: tipo actividad_por_grados exige variantes_por_grado.`;
+    case "variantes_unexpected":
+      return `- Fase ${issue.fase}, bloque ${issue.bloque + 1}: tipo ${issue.tipo} debe tener variantes_por_grado = null.`;
+    case "variantes_not_partition": {
+      const parts: string[] = [];
+      if (issue.missing.length) parts.push(`faltan ${issue.missing.map(g).join(", ")}`);
+      if (issue.extra.length) parts.push(`sobran ${issue.extra.map(g).join(", ")}`);
+      if (issue.duplicated.length) parts.push(`repetidos ${issue.duplicated.map(g).join(", ")}`);
+      return `- Fase ${issue.fase}, bloque ${issue.bloque + 1}: las variantes deben cubrir cada grado seleccionado exactamente una vez (${parts.join("; ")}).`;
+    }
+    case "variantes_single_grade":
+      return `- Fase ${issue.fase}, bloque ${issue.bloque + 1}: hay un solo grupo de edad; no uses actividad_por_grados, diferencia por roles dentro del contenido.`;
+  }
+}
 
 export class PlanValidationError extends Error {
   readonly issues: ValidationIssue[];
@@ -18,27 +73,14 @@ export class PlanValidationError extends Error {
     this.rawOutput = rawOutput;
   }
 
-  /** Produce a retry hint for Claude containing specific error context. */
+  /** Spanish retry hint listing the first issues, for the model's second attempt. */
   toRetryHint(): string {
-    const lines = this.issues.slice(0, 5).map((issue) => {
-      switch (issue.kind) {
-        case "zod_parse":
-          return `- JSON shape error at ${(issue.path ?? []).join(".")}: ${issue.message}`;
-        case "unknown_token":
-          return `- You returned token ${issue.token} in ${issue.where}, but it is not in the allowed DBA set.`;
-        case "missing_cross_product":
-          return `- Missing dba_targets for (grado=${issue.grado}, materia_id=${issue.materia_id}). You must provide 1-2 DBAs for every (grado, materia) pair.`;
-        case "activity_token_not_in_targets":
-          return `- Activity for grado=${issue.grado}, materia=${issue.materia_id} uses token ${issue.token}, but that token is not in this project's dba_targets for that pair.`;
-        case "evidencia_index_out_of_range":
-          return `- evidencia_index is out of range for DBA ${issue.token}: index ${issue.index} does not exist.`;
-        case "evidencia_required_for_non_ingles":
-          return `- DBA ${issue.token} is not Inglés, so evidencia_index cannot be null.`;
-        case "duplicate_dba_target":
-          return `- Duplicate DBA in (grado=${issue.grado}, materia=${issue.materia_id}). Each (grado, materia) pair must contain 1-2 distinct DBAs.`;
-      }
-    });
-    return `Previous response failed validation:\n${lines.join("\n")}\n\nReturn a corrected JSON response fixing these issues.`;
+    const lines = this.issues.slice(0, MAX_HINT_ISSUES).map(describeIssue);
+    const more =
+      this.issues.length > MAX_HINT_ISSUES
+        ? `\n- (y ${this.issues.length - MAX_HINT_ISSUES} error(es) más del mismo tipo)`
+        : "";
+    return `Tu respuesta anterior falló la validación:\n${lines.join("\n")}${more}\n\nVuelve a llamar a la herramienta con el proyecto completo corregido.`;
   }
 }
 

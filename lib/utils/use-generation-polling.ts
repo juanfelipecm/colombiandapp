@@ -1,10 +1,20 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import {
-  GENERATING_STAGE_INTERVAL_MS,
-  GENERATING_STAGE_MESSAGES,
-} from "@/components/ui/generating-overlay";
+import { GENERATING_STAGE_INTERVAL_MS, nextStageIdx } from "@/components/ui/generating-overlay";
+
+/** Teacher-facing copy per terminal generation status (DESIGN.md: what happened, then what to do). */
+export const GENERATION_ERROR_COPY: Record<string, string> = {
+  validation_failed:
+    "No logramos armar un proyecto con estas opciones. Intenta con otro tema o menos materias.",
+  timeout: "Tardó más de lo esperado. Inténtalo de nuevo.",
+  api_error: "Algo falló de nuestro lado. Inténtalo en unos minutos.",
+  db_error: "Algo falló de nuestro lado. Inténtalo en unos minutos.",
+};
+
+export function generationErrorMessage(status: string | undefined): string {
+  return (status && GENERATION_ERROR_COPY[status]) ?? GENERATION_ERROR_COPY.api_error;
+}
 
 const POLL_INTERVAL_MS = 2_000;
 // Matches the route's maxDuration (300s). Server keeps working past this via
@@ -34,7 +44,7 @@ export function useGenerationPolling(generationId: string | null): GenerationPol
     stageTimerRef.current = setInterval(() => {
       setResult((prev) =>
         prev.kind === "pending"
-          ? { kind: "pending", stageIdx: (prev.stageIdx + 1) % GENERATING_STAGE_MESSAGES.length }
+          ? { kind: "pending", stageIdx: nextStageIdx(prev.stageIdx) }
           : prev,
       );
     }, GENERATING_STAGE_INTERVAL_MS);
@@ -68,11 +78,7 @@ export function useGenerationPolling(generationId: string | null): GenerationPol
 
         if (s.status && s.status !== "pending") {
           clear();
-          setResult({
-            kind: "error",
-            message:
-              "No pudimos generar el proyecto. Tu información está guardada. Intenta de nuevo cuando haya mejor señal.",
-          });
+          setResult({ kind: "error", message: generationErrorMessage(s.status) });
           return;
         }
 
@@ -80,7 +86,7 @@ export function useGenerationPolling(generationId: string | null): GenerationPol
           clear();
           setResult({
             kind: "error",
-            message: "Esto está tardando más de lo normal. Intenta de nuevo en un momento.",
+            message: GENERATION_ERROR_COPY.timeout,
           });
         }
       } catch {

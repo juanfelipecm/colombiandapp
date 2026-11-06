@@ -1,21 +1,18 @@
+import { ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { formatGradosList } from "@/lib/clase-viva/grados";
 
 export type InFlightGeneration = {
   id: string;
   grados: number[];
   materiaCount: number;
-  duracion: number;
   createdAt: string;
 };
 
 export function InFlightGenerationCard({ generation }: { generation: InFlightGeneration }) {
   const when = formatRelativeEs(generation.createdAt);
-  const gradosLabel =
-    generation.grados.length > 0
-      ? `Grado${generation.grados.length === 1 ? "" : "s"} ${generation.grados.join(", ")}`
-      : "Proyecto";
+  const gradosLabel = generation.grados.length > 0 ? formatGradosList(generation.grados) : "Proyecto";
   const materiasLabel = `${generation.materiaCount} materia${generation.materiaCount === 1 ? "" : "s"}`;
-  const duracionLabel = `${generation.duracion} semana${generation.duracion === 1 ? "" : "s"}`;
 
   return (
     <Link
@@ -29,10 +26,12 @@ export function InFlightGenerationCard({ generation }: { generation: InFlightGen
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold text-text-primary">Generando proyecto…</p>
         <p className="mt-0.5 truncate text-[11px] text-text-secondary">
-          {gradosLabel} · {materiasLabel} · {duracionLabel} · {when}
+          {gradosLabel} · {materiasLabel} · {when}
         </p>
       </div>
-      <span className="shrink-0 text-xs font-semibold text-brand-blue">Ver progreso ▶</span>
+      <span className="inline-flex shrink-0 items-center gap-0.5 text-xs font-semibold text-brand-blue">
+        Ver progreso <ChevronRight size={14} aria-hidden />
+      </span>
     </Link>
   );
 }

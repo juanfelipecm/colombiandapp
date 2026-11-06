@@ -85,14 +85,16 @@ export async function renderShare(
   format: "image" | "pdf",
 ): Promise<RenderResult> {
   const assets = await loadAssets();
-  const heightInfo = estimateHeight(data);
+  // Image = compact overview (bounded by design); PDF = full plan across A4 pages.
+  const compact = format === "image";
+  const heightInfo = estimateHeight(data, { compact });
 
-  // Image format respects the hard cap (clips long projects); PDF takes the
-  // full estimated height across multiple A4 pages.
+  // The image still respects the hard cap as a safety net; the PDF takes the
+  // full estimated height.
   const renderHeight =
-    format === "image" && heightInfo.hardCapped ? HEIGHT_LIMITS.HARD_CAP : heightInfo.estimated;
+    compact && heightInfo.hardCapped ? HEIGHT_LIMITS.HARD_CAP : heightInfo.estimated;
 
-  const png = await renderPng(data, assets, heightInfo.softCapped, renderHeight);
+  const png = await renderPng(data, assets, heightInfo.softCapped, renderHeight, compact);
 
   if (format === "image") {
     return {
@@ -115,6 +117,7 @@ async function renderPng(
   assets: AssetCache,
   softCapped: boolean,
   heightPx: number,
+  compact = false,
 ): Promise<Buffer> {
   const { default: satori } = await import("satori");
   const { Resvg } = await import("@resvg/resvg-js");
@@ -125,6 +128,7 @@ async function renderPng(
       logoDataUrl={assets.logoDataUrl}
       generatedAtLabel={formatDateEs(new Date())}
       softCapped={softCapped}
+      compact={compact}
     />,
     {
       width: RENDER_WIDTH_PX,

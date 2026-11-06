@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { Button } from "@/components/ui/button";
 import { GeneratingOverlay } from "@/components/ui/generating-overlay";
 import { useGenerationPolling } from "@/lib/utils/use-generation-polling";
 
@@ -21,21 +22,13 @@ export function ResumeClient({ generationId }: { generationId: string }) {
         <div className="mb-6 max-w-sm rounded-2xl border-[1.5px] border-brand-red bg-[#ffe0e0] p-4 text-sm">
           <p className="mb-3 font-medium text-[var(--grade-3-text)]">{result.message}</p>
         </div>
-        <div className="flex flex-col gap-2">
-          <button
-            type="button"
-            onClick={() => router.replace("/proyectos/nuevo")}
-            className="rounded-xl bg-brand-blue px-5 py-3 text-sm font-semibold text-white"
-          >
+        <div className="flex w-full max-w-sm flex-col gap-3">
+          <Button variant="primary" className="w-full" onClick={() => router.replace("/proyectos/nuevo")}>
             Intentar de nuevo
-          </button>
-          <button
-            type="button"
-            onClick={() => router.replace("/dashboard")}
-            className="text-sm font-medium text-text-secondary"
-          >
+          </Button>
+          <Button variant="ghost" className="w-full" onClick={() => router.replace("/dashboard")}>
             Volver al inicio
-          </button>
+          </Button>
         </div>
       </div>
     );

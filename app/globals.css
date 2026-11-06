@@ -102,9 +102,9 @@ body {
   /* Force container to full page width */
   main > div { max-width: none !important; padding: 0 !important; }
 
-  /* Avoid page breaks inside phase cards + grade cards */
-  section,
-  .rounded-2xl { break-inside: avoid; page-break-inside: avoid; }
+  /* Avoid page breaks inside individual blocks, band rows and tips. Clase Viva
+     fase cards are long, so they may break between blocks (not inside one). */
+  .print-keep { break-inside: avoid; page-break-inside: avoid; }
 
   /* Collapse card borders slightly for denser print */
   .rounded-2xl, .rounded-xl {

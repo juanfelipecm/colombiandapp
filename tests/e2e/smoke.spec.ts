@@ -40,7 +40,7 @@ test.describe("Smoke", () => {
   test("POST /api/proyectos/generate unauth returns 401", async ({ request }) => {
     const res = await request.post("/api/proyectos/generate", {
       headers: { "Content-Type": "application/json" },
-      data: { grados: [1], materia_ids: [], student_ids: [], duracion_semanas: 1 },
+      data: { grados: [1], materia_ids: [], student_ids: [] },
     });
     // Middleware redirects anonymous traffic to /login; for a POST request the
     // request API follows the redirect to /login which has no POST handler, so

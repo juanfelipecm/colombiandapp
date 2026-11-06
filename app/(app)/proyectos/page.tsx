@@ -57,7 +57,9 @@ export default async function ProyectosPage({ searchParams }: PageProps) {
 
   const query = supabase
     .from("projects")
-    .select("id, titulo, duracion_semanas, status, created_at, project_grados(grado)")
+    .select("id, titulo, status, created_at, project_grados(grado), project_phases(completed_at)")
+    // Legacy pbl-v1 projects can't render as Clase Viva; keep them out of every list.
+    .neq("prompt_version", "pbl-v1")
     .order("created_at", { ascending: false });
 
   const { data: projectsRaw } = await (showArchived
@@ -67,19 +69,19 @@ export default async function ProyectosPage({ searchParams }: PageProps) {
   type ProjectRow = {
     id: string;
     titulo: string;
-    duracion_semanas: number;
     status: string;
     created_at: string;
     project_grados: Array<{ grado: number }>;
+    project_phases: Array<{ completed_at: string | null }> | null;
   };
 
   const allProjects: ProjectCardData[] = ((projectsRaw as ProjectRow[] | null) ?? []).map((p) => ({
     id: p.id,
     titulo: p.titulo,
-    duracion_semanas: p.duracion_semanas,
     status: p.status as ProjectCardData["status"],
     created_at: p.created_at,
     grados: (p.project_grados ?? []).map((g) => g.grado).sort((a, b) => a - b),
+    phasesCompleted: (p.project_phases ?? []).filter((ph) => ph.completed_at).length,
   }));
 
   // Per-tab counts derived from the same query so the tab strip is informative

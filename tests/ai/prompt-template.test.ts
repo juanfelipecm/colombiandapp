@@ -78,7 +78,6 @@ describe("buildUserPrompt", () => {
         grados: [1],
         materia_ids: [matLenguaje],
         studentCountsByGrade: { 1: 3 },
-        duracion_semanas: 1,
         tema_contexto: null,
       },
       ctx,
@@ -92,7 +91,6 @@ describe("buildUserPrompt", () => {
         grados: [1],
         materia_ids: [matLenguaje],
         studentCountsByGrade: { 1: 3 },
-        duracion_semanas: 1,
         tema_contexto: "el agua de la quebrada",
       },
       ctx,
@@ -108,7 +106,6 @@ describe("buildUserPrompt", () => {
         grados: [1],
         materia_ids: [matLenguaje],
         studentCountsByGrade: { 1: 3 },
-        duracion_semanas: 1,
         tema_contexto: null,
       },
       ctx,
@@ -133,7 +130,6 @@ describe("buildUserPrompt", () => {
         grados: [3],
         materia_ids: [matIngles],
         studentCountsByGrade: { 3: 4 },
-        duracion_semanas: 1,
         tema_contexto: null,
       },
       inglesCtx,
@@ -147,7 +143,6 @@ describe("buildUserPrompt", () => {
         grados: [1, 5],
         materia_ids: [matLenguaje],
         studentCountsByGrade: { 1: 3, 5: 2 },
-        duracion_semanas: 1,
         tema_contexto: null,
       },
       ctx,
@@ -167,5 +162,55 @@ describe("SYSTEM_PROMPT tool use", () => {
 
   it("warns against prompt injection in <previous_output> tags", () => {
     expect(SYSTEM_PROMPT).toContain("<previous_output>");
+  });
+});
+
+describe("Clase Viva prompt", () => {
+  const ctx = assignTokens([entry({ id: "a", grado: 1, materia_id: matLenguaje })]);
+  const base = { materia_ids: [matLenguaje], studentCountsByGrade: { 1: 3 }, tema_contexto: null };
+
+  it("system prompt names the five etapas and the key routines", () => {
+    for (const s of [
+      "Despertar la curiosidad",
+      "Indagar e investigar",
+      "Fase 3 — Crear",
+      "Fase 4 — Reflexionar",
+      "Fase 5 — Compartir",
+      "Planear – Hacer – Revisar",
+      "Una cosa que me gustó",
+      "Antes pensaba",
+      "pregunta guía ABIERTA",
+    ]) {
+      expect(SYSTEM_PROMPT).toContain(s);
+    }
+  });
+
+  it("tells the model tarea_previa is written to the teacher", () => {
+    expect(SYSTEM_PROMPT).toMatch(/`tarea_previa` como instrucción para la maestra/);
+  });
+
+  it("drops the old ABP fields", () => {
+    expect(SYSTEM_PROMPT).not.toMatch(/producto_final|cierre_evaluacion|dias_label/);
+  });
+
+  it("lists the grade bands for a multi-band selection", () => {
+    const text = buildUserPrompt({ ...base, grados: [0, 1, 2, 4] }, ctx);
+    expect(text).toContain("Franja A: Transición y 1° → grados [0, 1]");
+    expect(text).toContain("Franja B: 2° → grados [2]");
+    expect(text).toContain("Franja C: 4° → grados [4]");
+    expect(text).toContain("Grados involucrados: Transición, 1°, 2°, 4°");
+  });
+
+  it("forbids actividad_por_grados for a single-band selection", () => {
+    const text = buildUserPrompt({ ...base, grados: [3] }, ctx);
+    expect(text).toContain("NO uses bloques de tipo actividad_por_grados");
+    expect(text).not.toContain("Franja A");
+  });
+
+  it("states the five-fase and tarea-retaken rules", () => {
+    const text = buildUserPrompt({ ...base, grados: [1] }, ctx);
+    expect(text).toMatch(/exactamente 5 entradas/);
+    expect(text).toMatch(/la fase N\+1 empieza retomándola/);
+    expect(text).not.toMatch(/semana/);
   });
 });

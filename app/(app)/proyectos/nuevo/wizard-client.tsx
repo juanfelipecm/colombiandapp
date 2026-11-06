@@ -1,13 +1,17 @@
 "use client";
 
+import { ChevronLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { etapasSentence } from "@/lib/clase-viva/etapas";
+import { formatGrado } from "@/lib/clase-viva/grados";
 import {
   GENERATING_STAGE_INTERVAL_MS,
-  GENERATING_STAGE_MESSAGES,
   GeneratingOverlay,
+  nextStageIdx,
 } from "@/components/ui/generating-overlay";
+import { generationErrorMessage } from "@/lib/utils/use-generation-polling";
 
 type Student = {
   id: string;
@@ -22,20 +26,21 @@ type Materia = {
   orden: number;
 };
 
-type Step = 1 | 2 | 3 | 4;
+type Step = 1 | 2 | 3;
+const LAST_STEP = 3;
 
 type WizardState = {
   step: Step;
   selectedGrades: number[];
   selectedStudentIds: string[];
   selectedMateriaIds: string[];
-  duracion: 1 | 2;
   tema: string;
 };
 
 type DraftShape = Omit<WizardState, "step"> & { step: number };
 
-const DRAFT_KEY = "pbl-wizard-draft-v1";
+export const DRAFT_KEY = "clase-viva-wizard-draft-v1";
+const LEGACY_DRAFT_KEY = "pbl-wizard-draft-v1";
 const MAX_MATERIAS = 3;
 
 type GenerationPhase =
@@ -63,7 +68,6 @@ export function WizardClient({
     selectedGrades: availableGrades,
     selectedStudentIds: students.map((s) => s.id),
     selectedMateriaIds: [],
-    duracion: 1,
     tema: "",
   }));
 
@@ -72,6 +76,8 @@ export function WizardClient({
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
+      // pbl-v1 drafts carried a duration step; drop them.
+      window.localStorage.removeItem(LEGACY_DRAFT_KEY);
       const raw = window.localStorage.getItem(DRAFT_KEY);
       if (raw) {
         const draft = JSON.parse(raw) as DraftShape;
@@ -80,13 +86,12 @@ export function WizardClient({
         const validGrades = new Set(availableGrades);
         const validMateriaIds = new Set(materias.map((m) => m.id));
         setState({
-          step: (draft.step >= 1 && draft.step <= 4 ? draft.step : 1) as Step,
+          step: (draft.step >= 1 && draft.step <= LAST_STEP ? draft.step : 1) as Step,
           selectedGrades: (draft.selectedGrades ?? availableGrades).filter((g) => validGrades.has(g)),
           selectedStudentIds: (draft.selectedStudentIds ?? students.map((s) => s.id)).filter((id) =>
             validStudentIds.has(id),
           ),
           selectedMateriaIds: (draft.selectedMateriaIds ?? []).filter((id) => validMateriaIds.has(id)),
-          duracion: draft.duracion === 2 ? 2 : 1,
           tema: typeof draft.tema === "string" ? draft.tema : "",
         });
       }
@@ -120,7 +125,7 @@ export function WizardClient({
     const timer = setInterval(() => {
       setGenPhase((prev) =>
         prev.kind === "generating"
-          ? { kind: "generating", stageIdx: (prev.stageIdx + 1) % GENERATING_STAGE_MESSAGES.length }
+          ? { kind: "generating", stageIdx: nextStageIdx(prev.stageIdx) }
           : prev,
       );
     }, GENERATING_STAGE_INTERVAL_MS);
@@ -150,10 +155,9 @@ export function WizardClient({
     });
   };
 
-  const setDuracion = (d: 1 | 2) => setState((p) => ({ ...p, duracion: d }));
   const setTema = (t: string) => setState((p) => ({ ...p, tema: t }));
 
-  const goNext = () => setState((p) => ({ ...p, step: Math.min(4, p.step + 1) as Step }));
+  const goNext = () => setState((p) => ({ ...p, step: Math.min(LAST_STEP, p.step + 1) as Step }));
   const goBack = () => setState((p) => ({ ...p, step: Math.max(1, p.step - 1) as Step }));
 
   const step1Valid =
@@ -177,7 +181,6 @@ export function WizardClient({
           grados: state.selectedGrades,
           materia_ids: state.selectedMateriaIds,
           student_ids: state.selectedStudentIds,
-          duracion_semanas: state.duracion,
           tema_contexto: state.tema.trim() || null,
         }),
       });
@@ -205,11 +208,7 @@ export function WizardClient({
         return;
       }
       if (body.status && body.status !== "pending") {
-        setGenPhase({
-          kind: "error",
-          message:
-            "No pudimos generar el proyecto. Tu información está guardada. Intenta de nuevo cuando haya mejor señal.",
-        });
+        setGenPhase({ kind: "error", message: generationErrorMessage(body.status) });
         return;
       }
 
@@ -275,15 +274,11 @@ export function WizardClient({
       ) : null}
 
       {state.step === 3 ? (
-        <Step3Duracion duracion={state.duracion} onPick={setDuracion} />
-      ) : null}
-
-      {state.step === 4 ? (
-        <Step4Tema tema={state.tema} onChangeTema={setTema} />
+        <Step3Tema tema={state.tema} onChangeTema={setTema} />
       ) : null}
 
       <div className="mt-6">
-        {state.step < 4 ? (
+        {state.step < LAST_STEP ? (
           <Button
             onClick={goNext}
             className="w-full"
@@ -324,21 +319,23 @@ function TopBar({
           type="button"
           onClick={onBack}
           disabled={!onBack}
-          className="text-sm font-medium text-brand-blue disabled:opacity-40"
+          className="inline-flex min-h-11 items-center gap-1 text-sm font-medium text-brand-blue disabled:opacity-40"
         >
-          ◀ Atrás
+          <ChevronLeft size={16} aria-hidden /> Atrás
         </button>
         <button
           type="button"
           onClick={onClose}
-          className="text-sm text-text-secondary"
+          className="min-h-11 text-sm text-text-secondary"
         >
           Cerrar
         </button>
       </div>
-      <p className="mb-2 text-xs font-medium text-text-secondary">Paso {step} de 4</p>
+      <p className="mb-2 text-xs font-medium text-text-secondary">
+        Paso {step} de {LAST_STEP}
+      </p>
       <div className="flex gap-1.5">
-        {[1, 2, 3, 4].map((s) => (
+        {[1, 2, 3].map((s) => (
           <div
             key={s}
             className={`h-1 flex-1 rounded-full ${
@@ -391,7 +388,7 @@ function Step1Grades({
                   : "border-border bg-card-bg opacity-70"
               }`}
             >
-              <p className="text-lg font-bold">{g}°</p>
+              <p className={`font-bold ${g === 0 ? "text-sm leading-7" : "text-lg"}`}>{formatGrado(g)}</p>
               <p className="text-[11px] text-text-secondary">{count} est.</p>
             </button>
           );
@@ -406,7 +403,7 @@ function Step1Grades({
         {Object.entries(byGrade).length > 0 ? (
           <p className="mt-1 text-xs text-text-secondary">
             {Object.entries(byGrade)
-              .map(([g, n]) => `${g}°: ${n}`)
+              .map(([g, n]) => `${formatGrado(Number(g))}: ${n}`)
               .join(" · ")}
           </p>
         ) : null}
@@ -465,46 +462,7 @@ function Step2Materias({
   );
 }
 
-function Step3Duracion({
-  duracion,
-  onPick,
-}: {
-  duracion: 1 | 2;
-  onPick: (d: 1 | 2) => void;
-}) {
-  return (
-    <div>
-      <h1 className="mb-2 text-2xl font-bold">¿Cuánto dura el proyecto?</h1>
-      <p className="mb-6 text-sm text-text-secondary">
-        Elige la duración que mejor se ajuste a tu semana.
-      </p>
-      <div className="grid grid-cols-2 gap-3">
-        {([1, 2] as const).map((d) => (
-          <button
-            key={d}
-            type="button"
-            onClick={() => onPick(d)}
-            className={`rounded-2xl border-[1.5px] p-6 text-center transition-colors ${
-              duracion === d
-                ? "border-brand-blue bg-brand-blue/5"
-                : "border-border bg-card-bg"
-            }`}
-          >
-            <p className="text-3xl font-bold">{d}</p>
-            <p className="mt-1 text-sm text-text-secondary">
-              semana{d === 1 ? "" : "s"}
-            </p>
-            <p className="mt-1 text-[11px] text-text-placeholder">
-              {d === 1 ? "5 días de clase" : "10 días de clase"}
-            </p>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function Step4Tema({
+function Step3Tema({
   tema,
   onChangeTema,
 }: {
@@ -531,6 +489,9 @@ function Step4Tema({
       />
       <p className="mt-1 text-right text-[11px] text-text-placeholder">
         {remaining} caracteres restantes
+      </p>
+      <p className="mt-4 text-sm text-text-secondary">
+        Tu proyecto tendrá 5 fases: {etapasSentence()}.
       </p>
     </div>
   );

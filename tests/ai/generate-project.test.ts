@@ -2,59 +2,14 @@ import { describe, expect, it, vi } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { generateProject } from "@/lib/ai/generate-project";
 import { AnthropicError, PlanValidationError } from "@/lib/ai/errors";
+import { makePlan } from "../fixtures/clase-viva-plan";
 
 // ---- Fixtures ---------------------------------------------------------------
 const MATERIA_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
 const DBA_ID = "11111111-1111-1111-1111-111111111111";
 
 function validPlan(): Record<string, unknown> {
-  return {
-    titulo: "Proyecto de la quebrada",
-    pregunta_guia: "¿Qué nos enseña la quebrada sobre el agua?",
-    producto_final: "Un mural colectivo con observaciones del agua.",
-    cierre_actividad: "Presentamos el mural a las familias el viernes.",
-    cierre_evaluacion: "Evaluamos si cada grupo explicó su contribución.",
-    materiales: ["papel", "lápices", "hojas"],
-    dba_targets: [
-      {
-        grado: 1,
-        materia_id: MATERIA_ID,
-        dbas: [{ dba_token: "D1", evidencia_index: 0 }],
-      },
-    ],
-    fases: [
-      {
-        orden: 1,
-        nombre: "Exploración",
-        dias_label: "Lunes-Martes",
-        descripcion: "Los estudiantes observan la quebrada y anotan lo que ven.",
-        actividades: {
-          "1": {
-            [MATERIA_ID]: {
-              tarea: "Dibuja tres fuentes de agua que veas cerca de la escuela.",
-              evidencia_observable: "El estudiante entrega un dibujo con 3 elementos.",
-              dba_tokens: ["D1"],
-            },
-          },
-        },
-      },
-      {
-        orden: 2,
-        nombre: "Síntesis",
-        dias_label: "Miércoles-Viernes",
-        descripcion: "Los estudiantes combinan sus dibujos en un mural colectivo.",
-        actividades: {
-          "1": {
-            [MATERIA_ID]: {
-              tarea: "Cuenta cuántas fuentes encontraste y agrúpalas.",
-              evidencia_observable: "El estudiante dice un número y lo compara.",
-              dba_tokens: ["D1"],
-            },
-          },
-        },
-      },
-    ],
-  };
+  return makePlan([1], [MATERIA_ID], { [`1:${MATERIA_ID}`]: "D1" }, { titulo: "Proyecto de la quebrada" });
 }
 
 function fakeSupabase(): SupabaseClient {
@@ -139,9 +94,31 @@ const baseInputs = {
   grados: [1],
   materia_ids: [MATERIA_ID],
   studentCountsByGrade: { 1: 3 },
-  duracion_semanas: 1 as const,
   tema_contexto: "el agua de la quebrada",
 };
+
+const badPlan = () => ({
+  ...validPlan(),
+  dba_targets: [{ grado: 1, materia_id: MATERIA_ID, dbas: [{ dba_token: "D99", evidencia_index: 0 }] }],
+});
+
+/** Clock that advances by `steps[i]` ms on each call after the first. */
+function steppingClock(start: number, latencies: number[]) {
+  // runOneAttempt reads now() at start and end; generateProject reads it once before the retry check.
+  const calls: number[] = [];
+  let t = start;
+  const seq = [...latencies];
+  return {
+    now: () => {
+      calls.push(t);
+      const v = t;
+      const step = seq.shift();
+      if (step !== undefined) t += step;
+      return v;
+    },
+    calls,
+  };
+}
 
 describe("generateProject", () => {
   it("succeeds on first attempt with a valid tool_use", async () => {
@@ -304,5 +281,105 @@ describe("generateProject", () => {
     expect(retryUserPrompt).toContain("</previous_output>");
     // Should include the serialized bad input so the model sees what to fix.
     expect(retryUserPrompt).toContain("D99");
+  });
+
+  it("sends the WHOLE prior output and a Spanish issue list on retry", async () => {
+    const supabase = fakeSupabase();
+    const bad = badPlan();
+    const anthropic = fakeAnthropic([
+      { type: "tool_use", input: bad },
+      { type: "tool_use", input: validPlan() },
+    ]);
+    await generateProject(baseInputs, { supabase, anthropic });
+    const anth = anthropic as unknown as { _stream: ReturnType<typeof vi.fn> };
+    const retry = (anth._stream.mock.calls[1][0] as { messages: Array<{ content: string }> }).messages[0].content;
+    expect(retry).toContain(JSON.stringify(bad));
+    expect(retry).toContain("Tu respuesta anterior falló la validación");
+    expect(retry).toContain("Usaste el token D99");
+  });
+
+  it("uses max_tokens 24000 and the Clase Viva tool description", async () => {
+    const supabase = fakeSupabase();
+    const anthropic = fakeAnthropic([{ type: "tool_use", input: validPlan() }]);
+    await generateProject(baseInputs, { supabase, anthropic });
+    const anth = anthropic as unknown as { _stream: ReturnType<typeof vi.fn> };
+    const args = anth._stream.mock.calls[0][0] as { max_tokens: number; tools: Array<{ description: string }> };
+    expect(args.max_tokens).toBe(24000);
+    expect(args.tools[0].description).toContain("Clase Viva");
+  });
+
+  it("retries with a timeout clamped to the remaining deadline budget", async () => {
+    const supabase = fakeSupabase();
+    const anthropic = fakeAnthropic([
+      { type: "tool_use", input: badPlan() },
+      { type: "tool_use", input: validPlan() },
+    ]);
+    // attempt 1 takes 60s; deadline is 150s after start → remaining = 150 - 60 - 15 = 75s ≥ 0.9×60.
+    const clock = steppingClock(0, [60_000, 0, 0, 0]);
+    const result = await generateProject(baseInputs, {
+      supabase,
+      anthropic,
+      now: clock.now,
+      deadlineAt: 150_000,
+    });
+    expect(result.attempts).toHaveLength(2);
+    expect(result.attempts[1].status).toBe("success");
+  });
+
+  it("skips the retry when the remaining budget is under 0.9× attempt-1 latency", async () => {
+    const supabase = fakeSupabase();
+    const anthropic = fakeAnthropic([
+      { type: "tool_use", input: badPlan() },
+      { type: "tool_use", input: validPlan() },
+    ]);
+    // attempt 1 takes 170s; deadline 280s → remaining = 280 - 170 - 15 = 95s < 153s.
+    const clock = steppingClock(0, [170_000, 0, 0]);
+    const err = await generateProject(baseInputs, {
+      supabase,
+      anthropic,
+      now: clock.now,
+      deadlineAt: 280_000,
+    }).catch((e) => e);
+    expect(err).toBeInstanceOf(PlanValidationError);
+    const anth = anthropic as unknown as { _stream: ReturnType<typeof vi.fn> };
+    expect(anth._stream).toHaveBeenCalledTimes(1);
+    const attempts = (err as { cause?: Array<{ status: string }> }).cause;
+    expect(attempts?.[0].status).toBe("validation_failed");
+  });
+
+  it("aborts the stream when an attempt times out", async () => {
+    const supabase = fakeSupabase();
+    const abort = vi.fn();
+    const anthropic = {
+      messages: {
+        stream: vi.fn(() => ({
+          abort,
+          finalMessage: () => new Promise(() => {}), // never resolves
+        })),
+      },
+    } as unknown as import("@anthropic-ai/sdk").default;
+    const err = await generateProject(baseInputs, { supabase, anthropic, timeoutMs: 20 }).catch((e) => e);
+    expect(err).toBeInstanceOf(AnthropicError);
+    expect(abort).toHaveBeenCalledOnce();
+  });
+
+  it("records max_tokens truncation on the attempt", async () => {
+    const supabase = fakeSupabase();
+    const anthropic = {
+      messages: {
+        stream: vi.fn(() => ({
+          finalMessage: async () => ({
+            stop_reason: "max_tokens",
+            content: [{ type: "tool_use", id: "t", name: "emit_plan", input: { titulo: "corto" } }],
+            usage: { input_tokens: 10, output_tokens: 24000 },
+          }),
+        })),
+      },
+    } as unknown as import("@anthropic-ai/sdk").default;
+    const err = await generateProject(baseInputs, { supabase, anthropic }).catch((e) => e);
+    expect(err).toBeInstanceOf(PlanValidationError);
+    const attempts = (err as { cause?: Array<{ error_message: string | null }> }).cause ?? [];
+    expect(attempts).toHaveLength(2);
+    for (const a of attempts) expect(a.error_message).toMatch(/^stop_reason=max_tokens after 24000/);
   });
 });

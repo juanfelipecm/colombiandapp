@@ -4,11 +4,9 @@ import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   Check,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   FileDown,
-  Info,
   Loader2,
   MoreVertical,
   Share2,
@@ -24,28 +22,29 @@ import {
 } from "@/lib/share-render/share-handlers";
 import { GradeBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Callout, QuestionBox, TareaPreviaCallout } from "@/components/ui/callout";
+import { splitParagraphs } from "@/lib/clase-viva/bloques";
+import { TOTAL_FASES, type ProjectStatus } from "@/lib/clase-viva/etapas";
+import { formatGradosList } from "@/lib/clase-viva/grados";
+import type { LoadedPhase, TargetsByMateria } from "@/lib/projects/load-project";
+import { PhaseSection } from "./phase-section";
 import {
   setPhaseCompleted,
   setProjectStatus,
   setSeEnsenoBien,
 } from "./actions";
 
-type Status = "generado" | "en_ensenanza" | "completado" | "archivado";
+type Status = ProjectStatus;
 
 type ShareKebabState = HandlerShareKebabState;
 
-type Project = {
+export type ViewProject = {
   id: string;
   titulo: string;
   pregunta_guia: string;
-  tema_contexto: string | null;
-  duracion_semanas: number;
-  producto_final: string;
-  cierre_actividad: string;
-  cierre_evaluacion: string;
+  tarea_previa: string | null;
   status: Status;
   se_enseno_bien: boolean | null;
-  created_at: string;
 };
 
 type Meta = {
@@ -54,107 +53,73 @@ type Meta = {
   studentCount: number;
 };
 
-type TargetsByGrade = Array<{
-  grado: number;
-  items: Array<{
-    materia_id: string;
-    materia_nombre: string;
-    materia_slug: string;
-    dba_numero: number;
-    enunciado: string;
-    evidencia: string | null;
-  }>;
-}>;
-
-type Phase = {
-  id: string;
-  orden: number;
-  nombre: string;
-  dias_label: string;
-  descripcion: string;
-  completed_at: string | null;
-  byGrade: Array<{
-    grado: number;
-    byMateria: Array<{
-      materia_id: string;
-      materia_nombre: string;
-      materia_slug: string;
-      tarea: string;
-      evidencia_observable: string;
-      targetIds: string[];
-    }>;
-  }>;
-};
-
-type TargetMap = Record<
-  string,
-  {
-    grado: number;
-    materia_id: string;
-    dba_numero: number;
-    enunciado: string;
-    evidencia: string | null;
-  }
->;
-
+/**
+ * Clase Viva project view. One anchor per status (DR1):
+ *
+ *               generado              en_ensenanza                    completado
+ *   1st  Título                       Título                          Título
+ *   2nd  Pregunta guía box            Pregunta guía box               Pregunta guía box
+ *   3rd  bubble "Empezar a enseñar"   strip + "Siguiente: Fase N"     feedback bubble
+ *   4th  tarea previa callout above Fase 1 while Fase 1 is pending, else a disclosure
+ *   5th  Las 5 fases (current fase open only while teaching; one primary: its Completar)
+ *   6th  DBA por grado · Materiales · Completar proyecto / Volver a enseñar
+ */
 export function ProjectView({
   project,
   meta,
-  targetsByGrade,
+  targetsByMateria,
   phases,
-  targetById,
   materiales,
+  invalidoCount = 0,
 }: {
-  project: Project;
+  project: ViewProject;
   meta: Meta;
-  targetsByGrade: TargetsByGrade;
-  phases: Phase[];
-  targetById: TargetMap;
+  targetsByMateria: TargetsByMateria;
+  phases: LoadedPhase[];
   materiales: string[];
+  invalidoCount?: number;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const teaching = project.status === "en_ensenanza";
 
-  const currentPhaseId = useMemo(
-    () => phases.find((p) => !p.completed_at)?.id ?? null,
-    [phases],
-  );
+  const currentPhase = useMemo(() => phases.find((p) => !p.completed_at) ?? null, [phases]);
+  const currentPhaseId = currentPhase?.id ?? null;
 
-  // Open state is derived: the current (first-incomplete) phase is open by
-  // default; the user can override per phase by clicking the header. Storing
-  // overrides only — not the full open set — avoids stale state when
-  // currentPhaseId changes (e.g. after completing a phase).
-  const [userToggled, setUserToggled] = useState<Map<string, boolean>>(
-    () => new Map(),
-  );
+  // Open state is derived: while teaching, the current (first-incomplete) fase
+  // is open by default; otherwise all start collapsed. User clicks override.
+  const [userToggled, setUserToggled] = useState<Map<string, boolean>>(() => new Map());
+  const [announcement, setAnnouncement] = useState("");
 
   const isPhaseOpen = (id: string): boolean => {
     if (userToggled.has(id)) return userToggled.get(id)!;
-    return id === currentPhaseId;
+    return teaching && id === currentPhaseId;
   };
 
   const togglePhase = (id: string) => {
     setUserToggled((prev) => {
       const next = new Map(prev);
-      const currentlyOpen = prev.has(id)
-        ? prev.get(id)!
-        : id === currentPhaseId;
-      next.set(id, !currentlyOpen);
+      next.set(id, !isPhaseOpen(id));
       return next;
     });
   };
 
-  const scrollToPhase = (id: string) => {
-    setUserToggled((prev) => {
-      const next = new Map(prev);
-      next.set(id, true);
-      return next;
-    });
+  const openAndScroll = (phase: LoadedPhase) => {
+    setUserToggled((prev) => new Map(prev).set(phase.id, true));
     requestAnimationFrame(() => {
-      const el = document.getElementById(`phase-${id}`);
-      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      document.getElementById(`fase-${phase.orden}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   };
+
+  // Deep link from cards/dashboard: /proyectos/[id]#fase-N opens and scrolls to it.
+  useEffect(() => {
+    const m = /^#fase-(\d)$/.exec(window.location.hash);
+    if (!m) return;
+    const target = phases.find((p) => p.orden === Number(m[1]));
+    // Deferred a frame: open after the first paint instead of a cascading render.
+    if (target) requestAnimationFrame(() => openAndScroll(target));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount
+  }, []);
 
   const handleStatus = (status: Status) => {
     startTransition(async () => {
@@ -170,20 +135,16 @@ export function ProjectView({
     });
   };
 
-  const handlePhaseComplete = (phaseId: string, completed: boolean) => {
+  const handlePhaseComplete = (phase: LoadedPhase, completed: boolean) => {
+    setAnnouncement(completed ? `Fase ${phase.orden} completada` : `Fase ${phase.orden} marcada como pendiente`);
     startTransition(async () => {
-      await setPhaseCompleted(project.id, phaseId, completed);
+      await setPhaseCompleted(project.id, phase.id, completed);
       router.refresh();
     });
   };
 
   const handleCompleteProject = () => {
-    if (
-      !window.confirm(
-        "¿Completar este proyecto? Podrás volver a enseñarlo después si quieres.",
-      )
-    )
-      return;
+    if (!window.confirm("¿Completar este proyecto? Podrás volver a enseñarlo después si quieres.")) return;
     handleStatus("completado");
   };
 
@@ -192,82 +153,65 @@ export function ProjectView({
 
   const handleShareImage = () => {
     if (shareState === "loading") return;
-    void shareImage({
-      projectId: project.id,
-      titulo: project.titulo,
-      setState: setShareState,
-    });
+    void shareImage({ projectId: project.id, titulo: project.titulo, setState: setShareState });
   };
 
   const handleDownloadPdf = () => {
     if (pdfState === "loading") return;
-    void downloadPdf({
-      projectId: project.id,
-      titulo: project.titulo,
-      setState: setPdfState,
-    });
+    void downloadPdf({ projectId: project.id, titulo: project.titulo, setState: setPdfState });
   };
 
-  const todayPhaseId = useMemo(() => {
-    if (project.status !== "en_ensenanza") return null;
-    const today = todayDayOfWeekEs();
-    return (
-      phases.find(
-        (p) => !p.completed_at && phaseContainsDay(p.dias_label, today),
-      )?.id ?? null
-    );
-  }, [project.status, phases]);
+  const header = (
+    <Header
+      project={project}
+      meta={meta}
+      // An overview image that silently skips a damaged block is worse than none (DR6).
+      onShareImage={invalidoCount > 0 ? undefined : handleShareImage}
+      onDownloadPdf={handleDownloadPdf}
+      shareState={shareState}
+      pdfState={pdfState}
+      onArchive={() => handleStatus("archivado")}
+      onUnarchive={() => handleStatus("generado")}
+    />
+  );
 
-  // Empty / recovery state — generation half-failed and left a project row
-  // with no phases. Show the header and a recovery callout instead of an
-  // empty plan.
+  // Empty / recovery state — legacy (pbl-v1) project or a half-failed generation.
   if (phases.length === 0) {
     return (
       <div>
         <BackLink />
-        <Header
-          project={project}
-          meta={meta}
-          onShareImage={handleShareImage}
-          onDownloadPdf={handleDownloadPdf}
-          shareState={shareState}
-          pdfState={pdfState}
-          onArchive={() => handleStatus("archivado")}
-          onUnarchive={() => handleStatus("generado")}
-        />
-        <div className="my-6 rounded-2xl bg-brand-yellow/20 border-b-4 border-black p-4">
-          <p className="mb-2 flex items-center gap-2 font-semibold">
-            <Info size={18} /> Este proyecto no tiene plan generado.
-          </p>
-          <p className="mb-3 text-sm">
-            La generación quedó incompleta. Puedes intentar generar de nuevo con
+        {header}
+        <Callout variant="warning" className="my-6">
+          <p className="font-semibold">Este proyecto no tiene un plan Clase Viva.</p>
+          <p className="text-sm">
+            Fue creado con una versión anterior o la generación quedó incompleta. Puedes crear uno nuevo con
             las mismas preferencias.
           </p>
-          <Button
-            variant="primary"
-            onClick={() => router.push("/proyectos/nuevo")}
-            className="w-full"
-          >
+          <Button variant="primary" onClick={() => router.push("/proyectos/nuevo")} className="mt-2 w-full">
             Volver a generar
           </Button>
-        </div>
+        </Callout>
       </div>
     );
   }
 
+  const fase1Pending = !phases[0]?.completed_at;
+  const showTareaAboveFase1 = !!project.tarea_previa && fase1Pending;
+
   return (
     <div>
       <BackLink />
-      <Header
-        project={project}
-        meta={meta}
-        onShareImage={handleShareImage}
-        onDownloadPdf={handleDownloadPdf}
-        shareState={shareState}
-        pdfState={pdfState}
-        onArchive={() => handleStatus("archivado")}
-        onUnarchive={() => handleStatus("generado")}
-      />
+      {header}
+
+      {project.tarea_previa && !fase1Pending ? (
+        <DisclosureSection title="Tarea previa">
+          <div className="space-y-2 text-sm leading-relaxed">
+            {splitParagraphs(project.tarea_previa).map((p, i) => (
+              <p key={i}>{p}</p>
+            ))}
+          </div>
+        </DisclosureSection>
+      ) : null}
 
       <NextStepHero
         status={project.status}
@@ -277,58 +221,58 @@ export function ProjectView({
         onChooseFeedback={handleFeedback}
       />
 
-      <ProductoFinalPreview text={project.producto_final} />
+      {project.status !== "archivado" ? (
+        <ProgressStrip
+          phases={phases}
+          showNext={teaching}
+          onSelect={openAndScroll}
+        />
+      ) : null}
 
-      <ProgressStrip
-        phases={phases}
-        onSelect={scrollToPhase}
-      />
+      <p aria-live="polite" className="sr-only">
+        {announcement}
+      </p>
 
-      {/* Plan por fases */}
       <section className="mb-6">
-        <h2 className="mb-3 text-lg font-bold">Plan por fases</h2>
+        <h2 className="mb-3 text-2xl font-bold text-brand-blue">Las {TOTAL_FASES} fases</h2>
         <div className="space-y-3">
-          {phases.map((phase) => (
-            <PhaseCard
-              key={phase.id}
-              phase={phase}
-              isOpen={isPhaseOpen(phase.id)}
-              isToday={phase.id === todayPhaseId}
-              isCurrent={phase.id === currentPhaseId}
-              onToggle={() => togglePhase(phase.id)}
-              onComplete={(done) => handlePhaseComplete(phase.id, done)}
-              targetById={targetById}
-              isPending={isPending}
-            />
+          {phases.map((phase, i) => (
+            <div key={phase.id} className="space-y-3">
+              {i === 0 && showTareaAboveFase1 ? <TareaPreviaCallout text={project.tarea_previa!} /> : null}
+              <PhaseSection
+                phase={phase}
+                isOpen={isPhaseOpen(phase.id)}
+                isCurrent={phase.id === currentPhaseId}
+                canComplete={teaching && phase.id === currentPhaseId}
+                isPending={isPending}
+                onToggle={() => togglePhase(phase.id)}
+                onComplete={(done) => handlePhaseComplete(phase, done)}
+              />
+            </div>
           ))}
         </div>
       </section>
 
-      {/* Reference material — collapsed by default, force-open in print */}
-      <DisclosureSection title="DBAs y evidencias">
-        {targetsByGrade.map(({ grado, items }) => (
-          <div key={grado} className="mb-3">
-            <div className="mb-2 flex items-center gap-2">
-              <GradeBadge grade={grado} />
-            </div>
-            <ul className="space-y-2">
-              {items.map((t, i) => (
-                <li key={`${grado}-${t.materia_id}-${i}`} className="text-sm">
-                  <span className="font-semibold">{t.materia_nombre}:</span>{" "}
-                  DBA #{t.dba_numero} — {t.enunciado}
-                  {t.evidencia && t.materia_slug !== "ingles" ? (
-                    <p className="mt-1 pl-3 text-xs text-text-secondary">
-                      Evidencia: {t.evidencia}
-                    </p>
+      <DisclosureSection title="DBA por grado">
+        {targetsByMateria.map((m) => (
+          <div key={m.materia_id} className="mb-4">
+            <h3 className="mb-2 text-base font-semibold">{m.materia_nombre}</h3>
+            <ul className="space-y-3">
+              {m.rows.map((r, i) => (
+                <li key={`${m.materia_id}-${r.grado}-${i}`} className="text-sm">
+                  <GradeBadge grade={r.grado} />
+                  <p className="mt-1">
+                    DBA #{r.dba_numero} — {r.enunciado}
+                  </p>
+                  {r.evidencia && m.materia_slug !== "ingles" ? (
+                    <p className="mt-1 pl-3 text-xs text-text-secondary">Evidencia: {r.evidencia}</p>
                   ) : null}
                 </li>
               ))}
             </ul>
           </div>
         ))}
-        {targetsByGrade.length === 0 ? (
-          <p className="text-sm text-text-secondary">(sin elementos)</p>
-        ) : null}
+        {targetsByMateria.length === 0 ? <p className="text-sm text-text-secondary">(sin elementos)</p> : null}
       </DisclosureSection>
 
       <DisclosureSection title="Materiales">
@@ -343,33 +287,9 @@ export function ProjectView({
         )}
       </DisclosureSection>
 
-      <DisclosureSection title="Cierre del proyecto">
-        <div className="space-y-3 text-sm">
-          <div>
-            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-text-secondary">
-              Actividad
-            </p>
-            <p className="leading-relaxed">{project.cierre_actividad}</p>
-          </div>
-          <div>
-            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-text-secondary">
-              Cómo evaluar
-            </p>
-            <p className="leading-relaxed">{project.cierre_evaluacion}</p>
-          </div>
-        </div>
-      </DisclosureSection>
-
-      {/* Project-level completion CTA — ghost, less prominent than phase
-          completion (which is the daily action). */}
-      {project.status === "en_ensenanza" ? (
+      {teaching ? (
         <div className="my-8 no-print">
-          <Button
-            variant="ghost"
-            onClick={handleCompleteProject}
-            disabled={isPending}
-            className="w-full"
-          >
+          <Button variant="ghost" onClick={handleCompleteProject} disabled={isPending} className="w-full">
             Completar proyecto
           </Button>
         </div>
@@ -377,12 +297,7 @@ export function ProjectView({
 
       {project.status === "completado" && project.se_enseno_bien !== null ? (
         <div className="my-8 no-print">
-          <Button
-            variant="ghost"
-            onClick={() => handleStatus("en_ensenanza")}
-            disabled={isPending}
-            className="w-full"
-          >
+          <Button variant="ghost" onClick={() => handleStatus("en_ensenanza")} disabled={isPending} className="w-full">
             Volver a enseñar
           </Button>
         </div>
@@ -398,7 +313,7 @@ export function ProjectView({
 }
 
 // =============================================================================
-// Header (back link, title with kebab, pregunta as subtitle, meta strip)
+// Header (back link, title with kebab, pregunta guía box, meta strip)
 // =============================================================================
 
 function BackLink() {
@@ -408,7 +323,7 @@ function BackLink() {
       <button
         type="button"
         onClick={() => router.back()}
-        className="inline-flex items-center gap-1 text-sm font-medium text-brand-blue"
+        className="inline-flex min-h-11 items-center gap-1 text-sm font-medium text-brand-blue"
       >
         <ChevronLeft size={16} aria-hidden /> Mis proyectos
       </button>
@@ -426,9 +341,9 @@ function Header({
   onArchive,
   onUnarchive,
 }: {
-  project: Project;
+  project: ViewProject;
   meta: Meta;
-  onShareImage: () => void;
+  onShareImage?: () => void;
   onDownloadPdf: () => void;
   shareState: ShareKebabState;
   pdfState: ShareKebabState;
@@ -436,9 +351,9 @@ function Header({
   onUnarchive: () => void;
 }) {
   return (
-    <header>
+    <header className="mb-4">
       <div className="mb-4 h-1 w-12 rounded-full bg-brand-yellow" />
-      <div className="mb-2 flex items-start justify-between gap-3">
+      <div className="mb-3 flex items-start justify-between gap-3">
         <h1 className="text-2xl font-bold leading-tight">{project.titulo}</h1>
         <div className="no-print">
           <KebabMenu
@@ -452,30 +367,98 @@ function Header({
           />
         </div>
       </div>
-      <p className="mb-3 text-base leading-relaxed text-text-secondary">
-        {project.pregunta_guia}
-      </p>
-      <MetaRow meta={meta} duracion={project.duracion_semanas} />
+      <QuestionBox eyebrow="Pregunta guía" question={project.pregunta_guia} />
+      <MetaRow meta={meta} />
     </header>
   );
 }
 
-function MetaRow({ meta, duracion }: { meta: Meta; duracion: number }) {
-  const materiasLabel = meta.materias.map((m) => m.nombre).join(" · ");
-  const gradosLabel = meta.grados.map((g) => `${g}°`).join(" · ");
+function MetaRow({ meta }: { meta: Meta }) {
+  const materiasLabel = meta.materias.map((m) => m.nombre).join(", ");
   return (
-    <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-secondary">
-      <span>
-        <strong className="text-text-primary">{duracion}</strong> semana
-        {duracion === 1 ? "" : "s"}
-      </span>
-      <span>
-        <strong className="text-text-primary">{meta.studentCount}</strong>{" "}
-        estudiante{meta.studentCount === 1 ? "" : "s"}
-      </span>
-      <span>Grados: {gradosLabel}</span>
-      <span>Materias: {materiasLabel}</span>
-    </div>
+    <p className="mt-2 text-sm text-text-secondary">
+      {TOTAL_FASES} fases · {meta.studentCount} estudiante{meta.studentCount === 1 ? "" : "s"} ·{" "}
+      {formatGradosList(meta.grados)}
+      {materiasLabel ? ` · ${materiasLabel}` : ""}
+    </p>
+  );
+}
+
+// =============================================================================
+// Progress strip — 5 circles (28px visual, 44px hit area). While teaching it
+// also carries the "Siguiente: Fase N" anchor row (DR1).
+// =============================================================================
+
+function ProgressStrip({
+  phases,
+  showNext,
+  onSelect,
+}: {
+  phases: LoadedPhase[];
+  showNext: boolean;
+  onSelect: (phase: LoadedPhase) => void;
+}) {
+  const completedCount = phases.filter((p) => p.completed_at).length;
+  const total = phases.length;
+  const currentIdx = phases.findIndex((p) => !p.completed_at);
+  const next = currentIdx >= 0 ? phases[currentIdx] : null;
+  return (
+    <section className="mb-6 no-print" aria-label="Progreso del proyecto">
+      <div className="mb-1 flex items-center justify-between">
+        <h2 className="text-[11px] font-semibold uppercase tracking-wide text-text-secondary">Progreso</h2>
+        <p className="text-xs text-text-secondary">
+          <strong className="text-text-primary">{completedCount}</strong> de {total} fases completada
+          {completedCount === 1 ? "" : "s"}
+        </p>
+      </div>
+      <div className="flex items-center">
+        {phases.map((p, i) => {
+          const done = !!p.completed_at;
+          const current = i === currentIdx;
+          return (
+            <div key={p.id} className="flex flex-1 items-center last:flex-none">
+              <button
+                type="button"
+                onClick={() => onSelect(p)}
+                aria-label={`Ir a Fase ${p.orden}: ${p.nombre}${done ? " (completada)" : current ? " (actual)" : ""}`}
+                className="flex h-11 w-11 shrink-0 items-center justify-center"
+              >
+                <span
+                  className={`flex h-7 w-7 items-center justify-center rounded-full border-2 text-xs font-bold transition-colors ${
+                    done
+                      ? "border-brand-blue bg-brand-blue text-white"
+                      : current
+                        ? "border-black bg-brand-yellow text-black"
+                        : "border-border bg-card-bg text-text-placeholder"
+                  }`}
+                >
+                  {done ? <Check size={14} aria-hidden /> : p.orden}
+                </span>
+              </button>
+              {i < phases.length - 1 ? (
+                <div className={`h-1 flex-1 rounded-full ${done ? "bg-brand-blue" : "bg-border"}`} />
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+      {showNext ? (
+        next ? (
+          <button
+            type="button"
+            onClick={() => onSelect(next)}
+            className="mt-1 flex min-h-11 w-full items-center justify-between rounded-xl px-1 text-left text-sm font-semibold text-brand-blue"
+          >
+            <span>
+              Siguiente: Fase {next.orden} · {next.nombre}
+            </span>
+            <ChevronRight size={18} aria-hidden />
+          </button>
+        ) : (
+          <p className="mt-2 text-sm font-semibold text-text-secondary">Todas las fases completadas</p>
+        )
+      ) : null}
+    </section>
   );
 }
 
@@ -585,305 +568,6 @@ function SpeechBubble({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
-
-// =============================================================================
-// Producto final preview — one-line, click to expand
-// =============================================================================
-
-function ProductoFinalPreview({ text }: { text: string }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <section className="mb-4 mt-4">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between gap-3 rounded-xl border border-border bg-card-bg px-3 py-2 text-left text-sm no-print"
-        aria-expanded={open}
-      >
-        <p className="min-w-0 flex-1 text-[11px] font-semibold uppercase tracking-wide text-text-secondary">
-          Producto final
-        </p>
-        <ChevronDown
-          size={18}
-          aria-hidden
-          className={`shrink-0 text-text-secondary transition-transform ${open ? "rotate-180" : ""}`}
-        />
-      </button>
-      {open ? (
-        <p className="mt-2 px-3 text-sm leading-relaxed">{text}</p>
-      ) : null}
-      {/* Print: always show full text, hide the toggle */}
-      <div className="hidden print:block">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-text-secondary">
-          Producto final
-        </p>
-        <p className="text-sm leading-relaxed">{text}</p>
-      </div>
-    </section>
-  );
-}
-
-// =============================================================================
-// Progress strip — N segments, 1 per phase. Tap → scroll to phase.
-// =============================================================================
-
-function ProgressStrip({
-  phases,
-  onSelect,
-}: {
-  phases: Phase[];
-  onSelect: (id: string) => void;
-}) {
-  const completedCount = phases.filter((p) => p.completed_at).length;
-  const total = phases.length;
-  const currentIdx = phases.findIndex((p) => !p.completed_at);
-  return (
-    <section className="mb-6 no-print">
-      <div className="mb-2 flex items-center justify-between">
-        <h2 className="text-[11px] font-semibold uppercase tracking-wide text-text-secondary">
-          Progreso
-        </h2>
-        <p className="text-xs text-text-secondary">
-          <strong className="text-text-primary">{completedCount}</strong> de{" "}
-          {total} {total === 1 ? "fase" : "fases"} completada
-          {completedCount === 1 ? "" : "s"}
-        </p>
-      </div>
-      <div className="flex items-center gap-1">
-        {phases.map((p, i) => {
-          const done = !!p.completed_at;
-          const current = i === currentIdx;
-          return (
-            <div key={p.id} className="flex flex-1 items-center gap-1">
-              <button
-                type="button"
-                onClick={() => onSelect(p.id)}
-                aria-label={`Ir a Fase ${p.orden}: ${p.nombre}${done ? " (completada)" : current ? " (actual)" : ""}`}
-                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 text-xs font-bold transition-colors ${
-                  done
-                    ? "border-brand-blue bg-brand-blue text-white"
-                    : current
-                      ? "border-black bg-brand-yellow text-black"
-                      : "border-border bg-card-bg text-text-placeholder"
-                }`}
-              >
-                {done ? <Check size={14} aria-hidden /> : p.orden}
-              </button>
-              {i < phases.length - 1 ? (
-                <div
-                  className={`h-1 flex-1 rounded-full ${done ? "bg-brand-blue" : "bg-border"}`}
-                />
-              ) : null}
-            </div>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
-
-// =============================================================================
-// Phase card — accordion, completion toggle, current-phase highlight
-// =============================================================================
-
-function PhaseCard({
-  phase,
-  isOpen,
-  isToday,
-  isCurrent,
-  onToggle,
-  onComplete,
-  targetById,
-  isPending,
-}: {
-  phase: Phase;
-  isOpen: boolean;
-  isToday: boolean;
-  isCurrent: boolean;
-  onToggle: () => void;
-  onComplete: (done: boolean) => void;
-  targetById: TargetMap;
-  isPending: boolean;
-}) {
-  const completed = !!phase.completed_at;
-  return (
-    <div
-      id={`phase-${phase.id}`}
-      className={`rounded-2xl border-[1.5px] bg-card-bg overflow-hidden ${
-        isCurrent && !completed
-          ? "border-black"
-          : completed
-            ? "border-border"
-            : "border-border"
-      }`}
-    >
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
-        aria-expanded={isOpen}
-      >
-        <div className="min-w-0 flex-1">
-          <p className="flex items-center gap-2 text-xs font-medium text-text-secondary">
-            <span>
-              Fase {phase.orden} · {phase.dias_label}
-            </span>
-            {isToday ? (
-              <span className="rounded-full bg-brand-yellow px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-black">
-                Hoy
-              </span>
-            ) : null}
-            {completed ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-brand-blue/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-brand-blue">
-                <Check size={10} aria-hidden /> Completada
-              </span>
-            ) : null}
-          </p>
-          <p className="font-semibold">{phase.nombre}</p>
-        </div>
-        <ChevronDown
-          size={18}
-          aria-hidden
-          className={`shrink-0 text-text-secondary transition-transform ${isOpen ? "rotate-180" : ""}`}
-        />
-      </button>
-      {isOpen ? (
-        <div className="border-t border-border px-4 py-4">
-          <p className="mb-4 text-sm leading-relaxed text-text-secondary">
-            {phase.descripcion}
-          </p>
-          <div className="space-y-4">
-            {phase.byGrade.map((g) => (
-              <GradeCard
-                key={g.grado}
-                grado={g.grado}
-                byMateria={g.byMateria}
-                targetById={targetById}
-              />
-            ))}
-          </div>
-          <div className="mt-4 no-print">
-            {completed ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onComplete(false)}
-                disabled={isPending}
-                className="w-full"
-              >
-                Marcar como pendiente
-              </Button>
-            ) : (
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => onComplete(true)}
-                disabled={isPending}
-                className="w-full"
-              >
-                Completar
-              </Button>
-            )}
-          </div>
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function GradeCard({
-  grado,
-  byMateria,
-  targetById,
-}: {
-  grado: number;
-  byMateria: Phase["byGrade"][number]["byMateria"];
-  targetById: TargetMap;
-}) {
-  const bgVars: Record<number, string> = {
-    0: "bg-[var(--grade-1-bg)]",
-    1: "bg-[var(--grade-1-bg)]",
-    2: "bg-[var(--grade-2-bg)]",
-    3: "bg-[var(--grade-3-bg)]",
-    4: "bg-[var(--grade-4-bg)]",
-    5: "bg-[var(--grade-5-bg)]",
-  };
-  return (
-    <div className={`rounded-xl p-3 ${bgVars[grado] ?? "bg-input-bg"}`}>
-      <div className="mb-2">
-        <GradeBadge grade={grado} />
-      </div>
-      <div className="space-y-3">
-        {byMateria.map((m) => (
-          <div key={m.materia_id}>
-            <p className="mb-0.5 text-[11px] font-semibold uppercase tracking-wide text-text-secondary">
-              {m.materia_nombre}
-            </p>
-            <p className="text-sm leading-relaxed">{m.tarea}</p>
-            <p className="mt-1 text-[11px] text-text-secondary">
-              Observación en clase: {m.evidencia_observable}
-            </p>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {m.targetIds.map((tid) => {
-                const t = targetById[tid];
-                if (!t) return <WarningChip key={tid} label="DBA no disponible" />;
-                return (
-                  <DbaPill
-                    key={tid}
-                    target={t}
-                    isIngles={m.materia_slug === "ingles"}
-                  />
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function DbaPill({
-  target,
-  isIngles,
-}: {
-  target: TargetMap[string];
-  isIngles: boolean;
-}) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="inline-block">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="rounded-full bg-brand-blue/10 px-2.5 py-1 text-[11px] font-semibold text-brand-blue"
-        aria-expanded={open}
-      >
-        DBA #{target.dba_numero}
-      </button>
-      {open ? (
-        <div className="mt-2 rounded-xl bg-card-bg p-3 text-xs text-text-secondary shadow-sm">
-          <p className="text-text-primary">{target.enunciado}</p>
-          {target.evidencia && !isIngles ? (
-            <p className="mt-2">
-              <span className="font-semibold text-text-secondary">Evidencia:</span>{" "}
-              {target.evidencia}
-            </p>
-          ) : null}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function WarningChip({ label }: { label: string }) {
-  return (
-    <span className="rounded-full bg-[var(--grade-1-bg)] px-2.5 py-1 text-[11px] font-medium text-[var(--grade-1-text)]">
-      {label}
-    </span>
-  );
-}
-
 // =============================================================================
 // Disclosure section (collapsible, force-open in print)
 // =============================================================================
@@ -903,7 +587,7 @@ function DisclosureSection({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between py-3 text-left no-print"
+        className="flex min-h-11 w-full items-center justify-between py-3 text-left no-print"
         aria-expanded={open}
       >
         <h2 className="text-base font-bold">{title}</h2>
@@ -934,7 +618,8 @@ function KebabMenu({
   onUnarchive,
 }: {
   isArchived: boolean;
-  onShareImage: () => void;
+  /** Omitted when the plan has damaged blocks (DR6): the share-image item is hidden. */
+  onShareImage?: () => void;
   onDownloadPdf: () => void;
   shareState: ShareKebabState;
   pdfState: ShareKebabState;
@@ -973,7 +658,7 @@ function KebabMenu({
   // For share/pdf, keep the menu open during loading so the user sees the
   // inline state change, but close on terminal states.
   const handleShareClick = () => {
-    onShareImage();
+    onShareImage?.();
   };
   const handlePdfClick = () => {
     onDownloadPdf();
@@ -987,7 +672,7 @@ function KebabMenu({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label="Más opciones"
-        className="flex h-9 w-9 items-center justify-center rounded-full text-text-secondary hover:bg-input-bg"
+        className="flex h-11 w-11 items-center justify-center rounded-full text-text-secondary hover:bg-input-bg"
       >
         <MoreVertical size={20} aria-hidden />
       </button>
@@ -996,11 +681,9 @@ function KebabMenu({
           role="menu"
           className="absolute right-0 z-10 mt-1 w-72 rounded-xl border border-border bg-card-bg py-1 shadow-lg"
         >
-          <ShareMenuItem
-            kind="image"
-            state={shareState}
-            onClick={handleShareClick}
-          />
+          {onShareImage ? (
+            <ShareMenuItem kind="image" state={shareState} onClick={handleShareClick} />
+          ) : null}
           <ShareMenuItem
             kind="pdf"
             state={pdfState}
@@ -1081,7 +764,7 @@ function ShareMenuItem({
       disabled={isBusy}
       aria-busy={isBusy || undefined}
       aria-live={ariaLive}
-      className={`flex w-full items-start gap-2 px-3 py-2 text-left text-sm hover:bg-input-bg disabled:cursor-wait ${
+      className={`flex min-h-11 w-full items-start gap-2 px-3 py-2 text-left text-sm hover:bg-input-bg disabled:cursor-wait ${
         tone === "error" ? "text-brand-red" : ""
       } ${tone === "success" ? "text-brand-green" : ""}`}
     >
@@ -1120,29 +803,10 @@ function MenuItem({
       type="button"
       role="menuitem"
       onClick={onClick}
-      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-input-bg"
+      className="flex min-h-11 w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-input-bg"
     >
       <span className="text-text-secondary">{icon}</span>
       <span>{children}</span>
     </button>
   );
-}
-
-// =============================================================================
-// Helpers
-// =============================================================================
-
-function todayDayOfWeekEs(): string {
-  const d = new Date().getDay();
-  return ["dom", "lun", "mar", "mie", "jue", "vie", "sab"][d] ?? "";
-}
-
-function phaseContainsDay(label: string, today: string): boolean {
-  if (!today) return false;
-  const norm = label
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "");
-  const tokens = norm.split(/[^a-z]+/).filter(Boolean);
-  return tokens.some((t) => t.startsWith(today));
 }
