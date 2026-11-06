@@ -9,6 +9,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:sql": "supabase test db",
+    "gen:types": "supabase gen types typescript --linked > lib/supabase/database.types.ts",
     "test:e2e": "playwright test",
     "ingest:dba": "tsx scripts/ingest-dba.ts",
     "eval:prompt": "tsx --env-file=.env.local scripts/pbl/run-eval.ts"

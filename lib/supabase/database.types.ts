@@ -457,27 +457,36 @@ export type Database = {
       }
       project_phases: {
         Row: {
+          bloques: Json | null
           completed_at: string | null
-          descripcion: string
-          dias_label: string
+          descripcion: string | null
+          dias_label: string | null
+          etapa: string | null
+          gran_pregunta: string | null
           id: string
           nombre: string
           orden: number
           project_id: string
         }
         Insert: {
+          bloques?: Json | null
           completed_at?: string | null
-          descripcion: string
-          dias_label: string
+          descripcion?: string | null
+          dias_label?: string | null
+          etapa?: string | null
+          gran_pregunta?: string | null
           id?: string
           nombre: string
           orden: number
           project_id: string
         }
         Update: {
+          bloques?: Json | null
           completed_at?: string | null
-          descripcion?: string
-          dias_label?: string
+          descripcion?: string | null
+          dias_label?: string | null
+          etapa?: string | null
+          gran_pregunta?: string | null
           id?: string
           nombre?: string
           orden?: number
@@ -532,57 +541,60 @@ export type Database = {
       }
       projects: {
         Row: {
-          cierre_actividad: string
-          cierre_evaluacion: string
+          cierre_actividad: string | null
+          cierre_evaluacion: string | null
           created_at: string
-          duracion_semanas: number
+          duracion_semanas: number | null
           id: string
           idempotency_key: string
           model: string
           pregunta_guia: string
-          producto_final: string
+          producto_final: string | null
           prompt_version: string
           school_id: string
           se_enseno_bien: boolean | null
           status: string
+          tarea_previa: string | null
           teacher_id: string
           tema_contexto: string | null
           titulo: string
           updated_at: string
         }
         Insert: {
-          cierre_actividad: string
-          cierre_evaluacion: string
+          cierre_actividad?: string | null
+          cierre_evaluacion?: string | null
           created_at?: string
-          duracion_semanas: number
+          duracion_semanas?: number | null
           id?: string
           idempotency_key: string
           model: string
           pregunta_guia: string
-          producto_final: string
+          producto_final?: string | null
           prompt_version: string
           school_id: string
           se_enseno_bien?: boolean | null
           status?: string
+          tarea_previa?: string | null
           teacher_id: string
           tema_contexto?: string | null
           titulo: string
           updated_at?: string
         }
         Update: {
-          cierre_actividad?: string
-          cierre_evaluacion?: string
+          cierre_actividad?: string | null
+          cierre_evaluacion?: string | null
           created_at?: string
-          duracion_semanas?: number
+          duracion_semanas?: number | null
           id?: string
           idempotency_key?: string
           model?: string
           pregunta_guia?: string
-          producto_final?: string
+          producto_final?: string | null
           prompt_version?: string
           school_id?: string
           se_enseno_bien?: boolean | null
           status?: string
+          tarea_previa?: string | null
           teacher_id?: string
           tema_contexto?: string | null
           titulo?: string
