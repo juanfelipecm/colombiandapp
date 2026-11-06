@@ -1,4 +1,4 @@
 {
-  "min_fases": 3,
+  "fases": 5,
   "zero_tech": "default"
 }
