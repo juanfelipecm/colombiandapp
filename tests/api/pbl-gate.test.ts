@@ -14,7 +14,6 @@ const base = {
   grados: [1, 2],
   materia_ids: [MAT],
   student_ids: [STU],
-  duracion_semanas: 1,
   tema_contexto: "el agua de la quebrada",
 };
 
@@ -66,9 +65,15 @@ describe("assertInputs", () => {
     expect("error" in r).toBe(true);
   });
 
-  it("rejects duracion_semanas that is not 1 or 2", () => {
+  it("ignores a stray duracion_semanas from a stale client", () => {
     const r = assertInputs({ ...base, duracion_semanas: 3 });
-    expect("error" in r).toBe(true);
+    expect("error" in r).toBe(false);
+    if (!("error" in r)) expect(r).not.toHaveProperty("duracion_semanas");
+  });
+
+  it("accepts Transición (grade 0)", () => {
+    const r = assertInputs({ ...base, grados: [0, 1] });
+    expect("error" in r).toBe(false);
   });
 
   it("rejects empty student_ids", () => {

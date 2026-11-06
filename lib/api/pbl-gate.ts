@@ -102,15 +102,14 @@ export type WizardInputsRaw = {
   grados: unknown;
   materia_ids: unknown;
   student_ids: unknown;
-  duracion_semanas: unknown;
   tema_contexto: unknown;
+  // `duracion_semanas` (pbl-v1) is ignored if a stale client still sends it.
 };
 
 export type ValidatedInputs = {
   grados: number[];
   materia_ids: string[];
   student_ids: string[];
-  duracion_semanas: 1 | 2;
   tema_contexto: string | null;
 };
 
@@ -142,9 +141,6 @@ export function assertInputs(body: unknown): ValidatedInputs | { error: string }
   if (student_ids.length === 0) return { error: "student_ids must be non-empty" };
   if (!student_ids.every((s) => UUID_RE.test(s))) return { error: "Each student_id must be a UUID" };
 
-  const duracion = Number(raw.duracion_semanas);
-  if (duracion !== 1 && duracion !== 2) return { error: "duracion_semanas must be 1 or 2" };
-
   let tema: string | null = null;
   if (raw.tema_contexto !== undefined && raw.tema_contexto !== null) {
     if (typeof raw.tema_contexto !== "string") {
@@ -161,7 +157,6 @@ export function assertInputs(body: unknown): ValidatedInputs | { error: string }
     grados: [...new Set(grados)].sort((a, b) => a - b),
     materia_ids: [...new Set(materia_ids)],
     student_ids: [...new Set(student_ids)],
-    duracion_semanas: duracion as 1 | 2,
     tema_contexto: tema,
   };
 }
