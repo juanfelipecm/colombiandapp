@@ -116,7 +116,8 @@ export function ProjectView({
     const m = /^#fase-(\d)$/.exec(window.location.hash);
     if (!m) return;
     const target = phases.find((p) => p.orden === Number(m[1]));
-    if (target) openAndScroll(target);
+    // Deferred a frame: open after the first paint instead of a cascading render.
+    if (target) requestAnimationFrame(() => openAndScroll(target));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount
   }, []);
 
