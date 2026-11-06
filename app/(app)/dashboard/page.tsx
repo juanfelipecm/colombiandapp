@@ -63,31 +63,32 @@ export default async function DashboardPage() {
   const { data: recentProjectsRaw } = await supabase
     .from("projects")
     .select(
-      "id, titulo, duracion_semanas, status, created_at, project_grados(grado)",
+      "id, titulo, status, created_at, project_grados(grado), project_phases(completed_at)",
     )
     .neq("status", "archivado")
+    .neq("prompt_version", "pbl-v1")
     .order("created_at", { ascending: false })
     .limit(9);
 
   type ProjectRow = {
     id: string;
     titulo: string;
-    duracion_semanas: number;
     status: string;
     created_at: string;
     project_grados: Array<{ grado: number }>;
+    project_phases: Array<{ completed_at: string | null }> | null;
   };
 
   const recentProjects: ProjectCardData[] = ((recentProjectsRaw as ProjectRow[] | null) ?? []).map(
     (p) => ({
       id: p.id,
       titulo: p.titulo,
-      duracion_semanas: p.duracion_semanas,
       status: p.status as ProjectCardData["status"],
       created_at: p.created_at,
       grados: (p.project_grados ?? [])
         .map((g) => g.grado)
         .sort((a, b) => a - b),
+      phasesCompleted: (p.project_phases ?? []).filter((ph) => ph.completed_at).length,
     }),
   );
 
@@ -97,20 +98,21 @@ export default async function DashboardPage() {
   type ActiveProjectRow = {
     id: string;
     titulo: string;
-    duracion_semanas: number;
     project_grados: Array<{ grado: number }>;
+    project_phases: Array<{ completed_at: string | null }> | null;
   };
   let activeProject: {
     id: string;
     titulo: string;
     grados: number[];
-    duracion_semanas: number;
+    phasesCompleted: number;
   } | null = null;
   if ((projectCount ?? 0) > 0) {
     const { data: activeRaw } = await supabase
       .from("projects")
-      .select("id, titulo, duracion_semanas, project_grados(grado)")
+      .select("id, titulo, project_grados(grado), project_phases(completed_at)")
       .eq("status", "en_ensenanza")
+      .neq("prompt_version", "pbl-v1")
       .order("updated_at", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -119,7 +121,7 @@ export default async function DashboardPage() {
       activeProject = {
         id: row.id,
         titulo: row.titulo,
-        duracion_semanas: row.duracion_semanas,
+        phasesCompleted: (row.project_phases ?? []).filter((ph) => ph.completed_at).length,
         grados: (row.project_grados ?? [])
           .map((g) => g.grado)
           .sort((a, b) => a - b),
@@ -151,7 +153,6 @@ export default async function DashboardPage() {
     inputs_jsonb: {
       grados?: number[];
       materia_ids?: string[];
-      duracion_semanas?: number;
     } | null;
     created_at: string;
   };
@@ -160,7 +161,6 @@ export default async function DashboardPage() {
     id: r.id,
     grados: (r.inputs_jsonb?.grados ?? []).slice().sort((a, b) => a - b),
     materiaCount: r.inputs_jsonb?.materia_ids?.length ?? 0,
-    duracion: r.inputs_jsonb?.duracion_semanas ?? 1,
     createdAt: r.created_at,
   }));
 

@@ -3,12 +3,15 @@
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { LinkButton } from "@/components/ui/button";
+import { projectHref } from "@/components/ui/project-card";
+import { faseProgressLabel } from "@/lib/clase-viva/etapas";
+import { formatGradosList } from "@/lib/clase-viva/grados";
 
 type ActiveProject = {
   id: string;
   titulo: string;
   grados: number[];
-  duracion_semanas: number;
+  phasesCompleted: number;
 };
 
 type DashboardPrimaryCtaProps =
@@ -19,12 +22,9 @@ type DashboardPrimaryCtaProps =
 export function DashboardPrimaryCta(props: DashboardPrimaryCtaProps) {
   if (props.state === "active") {
     const { project } = props;
-    const gradosLabel =
-      project.grados.length > 0
-        ? `Grado${project.grados.length === 1 ? "" : "s"} ${project.grados.join(", ")}`
-        : null;
-    const semanasLabel = `${project.duracion_semanas} semana${project.duracion_semanas === 1 ? "" : "s"}`;
-    const meta = [gradosLabel, semanasLabel].filter(Boolean).join(" · ");
+    const gradosLabel = project.grados.length > 0 ? formatGradosList(project.grados) : null;
+    const faseLabel = faseProgressLabel("en_ensenanza", project.phasesCompleted);
+    const meta = [gradosLabel, faseLabel].filter(Boolean).join(" · ");
 
     return (
       <>
@@ -36,7 +36,7 @@ export function DashboardPrimaryCta(props: DashboardPrimaryCtaProps) {
             <h2 className="mb-1 text-base font-semibold">{project.titulo}</h2>
             <p className="mb-4 text-xs text-text-secondary">{meta}</p>
             <LinkButton
-              href={`/proyectos/${project.id}`}
+              href={projectHref(project.id, "en_ensenanza", project.phasesCompleted)}
               variant="primary"
               size="sm"
             >

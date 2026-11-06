@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { GradeBadge } from "@/components/ui/badge";
+import { TOTAL_FASES, faseProgressLabel } from "@/lib/clase-viva/etapas";
 
 export type ProjectCardData = {
   id: string;
   titulo: string;
-  duracion_semanas: number;
   status: "generado" | "en_ensenanza" | "completado" | "archivado";
   created_at: string;
   grados: number[];
+  /** Fases with completed_at set (0..5). */
+  phasesCompleted: number;
 };
 
 const STATUS_LABEL: Record<ProjectCardData["status"], string> = {
@@ -24,6 +26,21 @@ const STATUS_STYLES: Record<ProjectCardData["status"], string> = {
   archivado: "bg-input-bg text-text-placeholder",
 };
 
+/** Deep link to the fase the teacher is on (first incomplete), or the page top. */
+export function projectHref(id: string, status: ProjectCardData["status"], phasesCompleted: number): string {
+  if (status === "en_ensenanza" && phasesCompleted < TOTAL_FASES) {
+    return `/proyectos/${id}#fase-${phasesCompleted + 1}`;
+  }
+  return `/proyectos/${id}`;
+}
+
+/** One status line per card (DR7): no chip + fase label saying the same thing. */
+export function cardStatusLine(status: ProjectCardData["status"], phasesCompleted: number): string | null {
+  if (status === "en_ensenanza") return faseProgressLabel(status, phasesCompleted);
+  if (status === "generado") return `${TOTAL_FASES} fases · Listo para empezar`;
+  return null;
+}
+
 export function ProjectCard({
   project,
   href,
@@ -31,8 +48,9 @@ export function ProjectCard({
   project: ProjectCardData;
   href?: string;
 }) {
-  const target = href ?? `/proyectos/${project.id}`;
+  const target = href ?? projectHref(project.id, project.status, project.phasesCompleted);
   const when = formatRelativeEs(project.created_at);
+  const statusLine = cardStatusLine(project.status, project.phasesCompleted);
 
   return (
     <Link
@@ -41,12 +59,7 @@ export function ProjectCard({
     >
       <p className="mb-1 line-clamp-2 text-sm font-semibold leading-snug">{project.titulo}</p>
       <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-text-secondary">
-        <span>
-          {project.duracion_semanas} semana
-          {project.duracion_semanas === 1 ? "" : "s"}
-        </span>
-        <span>·</span>
-        <span className="flex gap-0.5">
+        <span className="flex flex-wrap gap-0.5">
           {project.grados.map((g) => (
             <GradeBadge key={g} grade={g} className="text-[9px] leading-none" />
           ))}
@@ -54,11 +67,15 @@ export function ProjectCard({
         <span>·</span>
         <span>{when}</span>
       </div>
-      <span
-        className={`mt-2 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${STATUS_STYLES[project.status]}`}
-      >
-        {STATUS_LABEL[project.status]}
-      </span>
+      {statusLine ? (
+        <p className="mt-2 text-xs font-semibold text-text-primary">{statusLine}</p>
+      ) : (
+        <span
+          className={`mt-2 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${STATUS_STYLES[project.status]}`}
+        >
+          {STATUS_LABEL[project.status]}
+        </span>
+      )}
     </Link>
   );
 }
