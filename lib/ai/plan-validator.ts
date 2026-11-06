@@ -59,6 +59,11 @@ export function validatePlan(
 
   for (const target of plan.dba_targets) {
     const pairKey = `${target.grado}:${target.materia_id}`;
+    // A pair split across two entries would give two rows with the same orden
+    // and fail the RPC's unique constraint after the paid model calls.
+    if (seenPairs.has(pairKey)) {
+      issues.push({ kind: "duplicate_target_pair", grado: target.grado, materia_id: target.materia_id });
+    }
     seenPairs.add(pairKey);
 
     const pairDupes = duplicateGuard.get(pairKey) ?? new Set<string>();

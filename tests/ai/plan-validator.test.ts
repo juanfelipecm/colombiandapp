@@ -95,6 +95,14 @@ describe("validatePlan — DBA targets (unchanged rules)", () => {
     expect(issues.some((i) => i.kind === "duplicate_dba_target")).toBe(true);
   });
 
+  it("rejects the same (grado × materia) pair split across two dba_targets entries", () => {
+    const { ctx, tokens } = ctxFor([1], [matLenguaje]);
+    const plan = makePlan([1], [matLenguaje], tokens);
+    plan.dba_targets.push(structuredClone(plan.dba_targets[0]));
+    const issues = issuesOf(() => validatePlan(plan, ctx, { grados: [1], materiaIds: [matLenguaje] }));
+    expect(issues).toContainEqual({ kind: "duplicate_target_pair", grado: 1, materia_id: matLenguaje });
+  });
+
   it("accepts null evidencia_index for Inglés DBAs", () => {
     const { ctx, tokens } = ctxFor([3], [matIngles], { materia_slug: "ingles", evidencias: [] });
     const plan = makePlan([3], [matIngles], tokens);

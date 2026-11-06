@@ -2,7 +2,7 @@ import { after, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient as createServerSupabase } from "@/lib/supabase/server";
 import { generateProject, type GenerateAttempt } from "@/lib/ai/generate-project";
-import { AnthropicError, PlanValidationError } from "@/lib/ai/errors";
+import { PlanValidationError } from "@/lib/ai/errors";
 import type { WizardInputs } from "@/lib/ai/prompt-template";
 import { PROMPT_MODEL, PROMPT_VERSION } from "@/lib/ai/plan-schema";
 import { buildRpcPayload } from "@/lib/api/build-rpc-payload";
@@ -257,17 +257,19 @@ async function runGeneration(ctx: RunInputs): Promise<void> {
       })
       .eq("id", generationId);
   } catch (err) {
-    const status: "validation_failed" | "api_error" | "timeout" =
-      err instanceof PlanValidationError
-        ? "validation_failed"
-        : err instanceof AnthropicError && /timeout/i.test(err.message)
-          ? "timeout"
-          : "api_error";
-
     // Extract per-attempt data (attached as .cause by the orchestrator) so we
     // can persist tokens/latency + raw output for debugging.
     const attempts = extractAttempts(err);
     const finalAttempt = attempts.length > 0 ? attempts[attempts.length - 1] : null;
+
+    // Classify from the attempt's own status: the timeout message
+    // ("Anthropic call exceeded Nms") never contains the word "timeout".
+    const status: "validation_failed" | "api_error" | "timeout" =
+      err instanceof PlanValidationError
+        ? "validation_failed"
+        : finalAttempt?.status === "timeout"
+          ? "timeout"
+          : "api_error";
 
     // Build a rich error message: include structured issues when present,
     // otherwise fall back to the Error.message.

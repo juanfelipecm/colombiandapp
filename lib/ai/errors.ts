@@ -6,6 +6,7 @@ export type ValidationIssue =
   | { kind: "evidencia_index_out_of_range"; token: string; index: number }
   | { kind: "evidencia_required_for_non_ingles"; token: string }
   | { kind: "duplicate_dba_target"; grado: number; materia_id: string; dba_id: string }
+  | { kind: "duplicate_target_pair"; grado: number; materia_id: string }
   | { kind: "etapa_orden_mismatch"; index: number; expected_etapa: string; got_etapa: string; got_orden: number }
   | { kind: "variantes_required"; fase: number; bloque: number }
   | { kind: "variantes_unexpected"; fase: number; bloque: number; tipo: string }
@@ -41,6 +42,8 @@ export function describeIssue(issue: ValidationIssue): string {
       return `- El DBA ${issue.token} no es de Inglés: evidencia_index no puede ser null.`;
     case "duplicate_dba_target":
       return `- DBA repetido en (grado=${issue.grado}, materia_id=${issue.materia_id}). Cada par lleva 1-2 DBA distintos.`;
+    case "duplicate_target_pair":
+      return `- El par (grado=${issue.grado}, materia_id=${issue.materia_id}) aparece más de una vez en dba_targets. Usa una sola entrada por par con 1-2 DBA.`;
     case "etapa_orden_mismatch":
       return `- fases[${issue.index}] debe tener orden ${issue.index + 1} y etapa '${issue.expected_etapa}', pero tiene orden ${issue.got_orden} y etapa '${issue.got_etapa}'.`;
     case "variantes_required":
