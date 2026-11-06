@@ -27,7 +27,7 @@ describe("eval checks", () => {
     bad.fases[4].bloques[bad.fases[4].bloques.length - 1].contenido = "Se despiden y recogen el salón.";
     const r = runFiveFasesCheck(bad);
     expect(r.ok).toBe(false);
-    expect(r.problems.join(" ")).toMatch(/fase\[0\].*fase\[1\].*pregunta guía/s);
+    expect(r.problems.join(" ")).toMatch(/fase\[0\][\s\S]*fase\[1\][\s\S]*pregunta guía/);
   });
 
   it("bands-coverage: hard on bad partitions, soft when no band block in a multi-band project", () => {
