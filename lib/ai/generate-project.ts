@@ -30,17 +30,28 @@ export type GenerateResult = {
   attempts: GenerateAttempt[];
 };
 
-const DEFAULT_MAX_TOKENS = 16000;
-// 140s per attempt. Two attempts worst case = 280s, fits under the route's
-// 300s maxDuration with buffer. Observed latencies for successful runs are
-// 52-120s, so 140s is a comfortable ceiling.
-const DEFAULT_TIMEOUT_MS = 140_000;
+const DEFAULT_MAX_TOKENS = 24000;
+// 200s per attempt. A Clase Viva plan (5 narrative fases) is ~9-15k output
+// tokens; at the ~70-150 tok/s observed for Opus 4.7 that is 65-200s.
+const DEFAULT_TIMEOUT_MS = 200_000;
+/** Time kept free after the last attempt for the RPC + log writes. */
+export const RPC_RESERVE_MS = 15_000;
+/** Attempt 2 only runs if the remaining budget is at least this share of attempt 1's latency. */
+export const RETRY_LATENCY_FACTOR = 0.9;
 
 export type GenerateDeps = {
   supabase: SupabaseClient;
   anthropic?: Anthropic;
   maxTokens?: number;
   timeoutMs?: number;
+  /**
+   * Wall-clock deadline (epoch ms) for the whole generation, set by the route
+   * from its maxDuration. Attempt 2 is clamped to it, or skipped when it could
+   * not plausibly finish.
+   */
+  deadlineAt?: number;
+  /** Clock, injectable for tests. */
+  now?: () => number;
 };
 
 /**
@@ -48,6 +59,16 @@ export type GenerateDeps = {
  * with a forced tool_use so the SDK returns a structured object (never a JSON
  * string we'd have to parse), validate semantically. Retries ONCE on validation
  * failure with the prior errors attached as a hint.
+ *
+ *   attempt 1 (≤ timeoutMs, stream aborted on timeout)
+ *        │ valid ───────────────────────────────► return plan
+ *        │ PlanValidationError
+ *        ▼
+ *   remaining = deadlineAt − now − RPC_RESERVE_MS
+ *   remaining < 0.9 × attempt1.latency ? ───────► throw PlanValidationError (no retry)
+ *        │ otherwise
+ *        ▼
+ *   attempt 2 (≤ min(timeoutMs, remaining), full <previous_output> + Spanish hint)
  *
  * Throws AnthropicError on network/API errors. Throws PlanValidationError if
  * both attempts fail validation. The `attempts` array is attached to both
@@ -64,6 +85,7 @@ export async function generateProject(
     });
   const maxTokens = deps.maxTokens ?? DEFAULT_MAX_TOKENS;
   const timeoutMs = deps.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  const now = deps.now ?? Date.now;
 
   const ctx = await buildDbaContext(deps.supabase, inputs.grados, inputs.materia_ids);
 
@@ -81,9 +103,11 @@ export async function generateProject(
     timeoutMs,
     inputSchema,
     attemptNumber: 1,
+    now,
   });
   attempts.push(attempt1.entry);
 
+  let firstError: PlanValidationError | null = null;
   if (attempt1.entry.status === "success" && attempt1.raw !== null) {
     try {
       const { plan } = validatePlan(attempt1.raw, ctx, {
@@ -94,7 +118,8 @@ export async function generateProject(
     } catch (err) {
       if (err instanceof PlanValidationError) {
         attempt1.entry.status = "validation_failed";
-        attempt1.entry.error_message = err.issues.map((i) => JSON.stringify(i)).join("; ");
+        attempt1.entry.error_message = withIssues(attempt1.entry.error_message, err);
+        firstError = err;
         // Fall through to attempt 2.
       } else {
         throw err;
@@ -107,17 +132,31 @@ export async function generateProject(
     });
   }
 
+  // Deadline-aware retry: only run attempt 2 if it can plausibly finish.
+  let attempt2Timeout = timeoutMs;
+  if (deps.deadlineAt !== undefined) {
+    const remaining = deps.deadlineAt - now() - RPC_RESERVE_MS;
+    if (remaining <= 0 || remaining < RETRY_LATENCY_FACTOR * attempt1.entry.latency_ms) {
+      const base = firstError ?? new PlanValidationError([], attempt1.entry.raw_output ?? "");
+      const skipped = new PlanValidationError(base.issues, base.rawOutput);
+      (skipped as Error & { cause?: unknown }).cause = attempts;
+      throw skipped;
+    }
+    attempt2Timeout = Math.min(timeoutMs, remaining);
+  }
+
   // Attempt 2 (with retry hint built from attempt 1's validation issues)
-  const retryHint = buildRetryHint(attempt1.entry, attempt1.raw);
+  const retryHint = buildRetryHint(firstError, attempt1.raw);
   const attempt2 = await runOneAttempt({
     anthropic,
     systemPrompt: SYSTEM_PROMPT,
     userPrompt: `${userPrompt}\n\n---\n${retryHint}`,
     model: PROMPT_MODEL,
     maxTokens,
-    timeoutMs,
+    timeoutMs: attempt2Timeout,
     inputSchema,
     attemptNumber: 2,
+    now,
   });
   attempts.push(attempt2.entry);
 
@@ -136,7 +175,7 @@ export async function generateProject(
   } catch (err) {
     if (err instanceof PlanValidationError) {
       attempt2.entry.status = "validation_failed";
-      attempt2.entry.error_message = err.issues.map((i) => JSON.stringify(i)).join("; ");
+      attempt2.entry.error_message = withIssues(attempt2.entry.error_message, err);
       const finalErr = new PlanValidationError(err.issues, err.rawOutput);
       (finalErr as Error & { cause?: unknown }).cause = attempts;
       throw finalErr;
@@ -145,17 +184,21 @@ export async function generateProject(
   }
 }
 
-function buildRetryHint(entry: GenerateAttempt, priorInput: unknown): string {
-  const hint =
-    "Tu llamada anterior a `emit_plan` falló validación semántica. Corrige los errores listados y vuelve a llamar a la herramienta.";
-  const detail = entry.error_message ?? "";
-  // `priorInput` is the tool_use `input` object — serialize for the hint.
-  // Wrap in <previous_output> so the model treats it as untrusted data, not instructions.
-  const serialized = priorInput != null ? JSON.stringify(priorInput).slice(0, 4000) : "";
-  const wrapped = serialized
-    ? `\n\n<previous_output>\n${serialized}\n</previous_output>\n`
-    : "";
-  return `${hint}\n\nErrores:\n${detail}${wrapped}`;
+/** Validation issues as the log message, keeping any earlier note (e.g. max_tokens truncation). */
+function withIssues(prior: string | null, err: PlanValidationError): string {
+  const issues = err.issues.map((i) => JSON.stringify(i)).join("; ");
+  return prior ? `${prior} | ${issues}` : issues;
+}
+
+export function buildRetryHint(err: PlanValidationError | null, priorInput: unknown): string {
+  const hint = err
+    ? err.toRetryHint()
+    : "Tu llamada anterior a `emit_plan` falló la validación. Vuelve a llamar a la herramienta con el proyecto completo corregido.";
+  // The whole prior tool input, so the model can see exactly what to fix.
+  // Wrapped in <previous_output> so it is treated as untrusted data, not instructions.
+  const serialized = priorInput != null ? safeStringify(priorInput) : "";
+  const wrapped = serialized ? `\n\n<previous_output>\n${serialized}\n</previous_output>\n` : "";
+  return `${hint}${wrapped}`;
 }
 
 type OneAttemptInput = {
@@ -167,6 +210,7 @@ type OneAttemptInput = {
   timeoutMs: number;
   inputSchema: Anthropic.Messages.Tool.InputSchema;
   attemptNumber: 1 | 2;
+  now: () => number;
 };
 
 type OneAttemptResult = {
@@ -175,7 +219,7 @@ type OneAttemptResult = {
 };
 
 async function runOneAttempt(input: OneAttemptInput): Promise<OneAttemptResult> {
-  const start = Date.now();
+  const start = input.now();
   const entry: GenerateAttempt = {
     attempt_number: input.attemptNumber,
     status: "api_error",
@@ -200,17 +244,25 @@ async function runOneAttempt(input: OneAttemptInput): Promise<OneAttemptResult> 
         {
           name: PLAN_TOOL_NAME,
           description:
-            "Emite el proyecto ABP generado como datos estructurados. Respeta las longitudes y enums del esquema.",
+            "Emite el proyecto Clase Viva generado como datos estructurados. Respeta las longitudes y enums del esquema.",
           input_schema: input.inputSchema,
         },
       ],
       tool_choice: { type: "tool", name: PLAN_TOOL_NAME },
     });
-    const response = await withTimeout(stream.finalMessage(), input.timeoutMs);
+    // On timeout, abort the stream so a slow attempt stops streaming (and billing)
+    // instead of running on in the background while attempt 2 starts.
+    const response = await withTimeout(stream.finalMessage(), input.timeoutMs, () =>
+      (stream as { abort?: () => void }).abort?.(),
+    );
 
-    entry.latency_ms = Date.now() - start;
+    entry.latency_ms = input.now() - start;
     entry.tokens_input = response.usage?.input_tokens ?? null;
     entry.tokens_output = response.usage?.output_tokens ?? null;
+    if (response.stop_reason === "max_tokens") {
+      // Kept on the entry even when status ends "success" so truncation is visible in logs.
+      entry.error_message = `stop_reason=max_tokens after ${entry.tokens_output ?? "?"} output tokens (tool input likely truncated)`;
+    }
 
     const toolUseBlock = response.content.find(
       (block): block is Anthropic.Messages.ToolUseBlock => block.type === "tool_use",
@@ -232,7 +284,7 @@ async function runOneAttempt(input: OneAttemptInput): Promise<OneAttemptResult> 
     entry.status = "success";
     return { entry, raw: toolInput };
   } catch (err) {
-    entry.latency_ms = Date.now() - start;
+    entry.latency_ms = input.now() - start;
     if (err instanceof TimeoutError) {
       entry.status = "timeout";
       entry.error_message = `Anthropic call exceeded ${input.timeoutMs}ms`;
@@ -270,7 +322,7 @@ function unwrapSingleKeyWrapper(value: unknown): unknown {
   const inner = obj[keys[0]];
   if (!inner || typeof inner !== "object" || Array.isArray(inner)) return value;
   const innerObj = inner as Record<string, unknown>;
-  const planKeys = ["titulo", "pregunta_guia", "fases", "dba_targets"];
+  const planKeys = ["titulo", "pregunta_guia", "tarea_previa", "fases", "dba_targets"];
   const looksLikePlan = planKeys.some((k) => k in innerObj);
   return looksLikePlan ? innerObj : value;
 }
@@ -282,10 +334,17 @@ class TimeoutError extends Error {
   }
 }
 
-function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+function withTimeout<T>(promise: Promise<T>, ms: number, onTimeout?: () => void): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | null = null;
   const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new TimeoutError(ms)), ms);
+    timer = setTimeout(() => {
+      try {
+        onTimeout?.();
+      } catch {
+        // aborting is best-effort; the timeout still rejects
+      }
+      reject(new TimeoutError(ms));
+    }, ms);
   });
   return Promise.race([promise, timeout]).finally(() => {
     if (timer) clearTimeout(timer);

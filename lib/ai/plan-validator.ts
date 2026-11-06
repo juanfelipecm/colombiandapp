@@ -1,6 +1,8 @@
 import type { DbaContext } from "./dba-context";
 import { PlanValidationError, type ValidationIssue } from "./errors";
 import { buildPlanSchema, type GeneratedPlan } from "./plan-schema";
+import { ETAPAS } from "@/lib/clase-viva/etapas";
+import { deriveGradeBands } from "@/lib/clase-viva/grados";
 
 export type ValidateInputs = {
   grados: number[];
@@ -13,10 +15,14 @@ export type ValidateResult = {
 
 /**
  * Validate a generated plan in two passes:
- *   Pass 1 — Zod schema (structural): catches shape, types, missing grade keys, out-of-range values.
- *   Pass 2 — Semantic: resolves tokens against tokenToUuid, checks cross-product coverage,
- *            verifies activity dba_tokens belong to their project's dba_targets for the same grado×materia,
- *            validates evidencia_index against the DBA's evidencias list.
+ *   Pass 1 — Zod schema (structural): shape, enums, lengths, exactly 5 fases.
+ *   Pass 2 — Semantic:
+ *     2a  dba_targets tokens resolve, belong to their (grado × materia) pair, no duplicates,
+ *         evidencia_index in range (null only for Inglés)
+ *     2b  every (grado × materia) pair has dba_targets
+ *     2c  fases[i] has orden i+1 and the i-th etapa
+ *     2d  variantes_por_grado only on actividad_por_grados and partitions the selected grades
+ *         (actividad_por_grados is not allowed when the selection is a single band)
  *
  * On any failure, throws PlanValidationError with structured issues + the raw output for logging.
  */
@@ -65,7 +71,7 @@ export function validatePlan(
       }
       if (entry.grado !== target.grado || entry.materia_id !== target.materia_id) {
         issues.push({
-          kind: "activity_token_not_in_targets",
+          kind: "target_token_wrong_pair",
           token: ref.dba_token,
           grado: target.grado,
           materia_id: target.materia_id,
@@ -110,41 +116,54 @@ export function validatePlan(
     }
   }
 
-  // Pass 2c: every activity's dba_tokens must appear in that project's dba_targets for the same pair
-  const targetsByPair = new Map<string, Set<string>>();
-  for (const target of plan.dba_targets) {
-    const key = `${target.grado}:${target.materia_id}`;
-    const tokens = new Set(target.dbas.map((d) => d.dba_token));
-    targetsByPair.set(key, tokens);
-  }
-
-  for (const phase of plan.fases) {
-    for (const [gradoStr, perMateria] of Object.entries(phase.actividades)) {
-      const grado = Number(gradoStr);
-      for (const [materiaId, activity] of Object.entries(perMateria)) {
-        const pairKey = `${grado}:${materiaId}`;
-        const allowedTokens = targetsByPair.get(pairKey);
-        if (!allowedTokens) {
-          // The schema-level check would have caught missing grade, but not missing materia.
-          issues.push({ kind: "missing_cross_product", grado, materia_id: materiaId });
-          continue;
-        }
-        for (const token of activity.dba_tokens) {
-          if (!ctx.tokenToEntry.has(token)) {
-            issues.push({ kind: "unknown_token", token, where: `fase ${phase.orden} / grado ${grado} / materia ${materiaId}` });
-            continue;
-          }
-          if (!allowedTokens.has(token)) {
-            issues.push({
-              kind: "activity_token_not_in_targets",
-              token,
-              grado,
-              materia_id: materiaId,
-            });
-          }
-        }
-      }
+  // Pass 2c: fases are the five etapas, in order
+  plan.fases.forEach((fase, i) => {
+    const expected = ETAPAS[i];
+    if (fase.orden !== i + 1 || fase.etapa !== expected) {
+      issues.push({
+        kind: "etapa_orden_mismatch",
+        index: i,
+        expected_etapa: expected,
+        got_etapa: fase.etapa,
+        got_orden: fase.orden,
+      });
     }
+  });
+
+  // Pass 2d: grade-band variants only on actividad_por_grados, partitioning the selection
+  const selected = new Set(inputs.grados);
+  const singleBand = deriveGradeBands(inputs.grados).length <= 1;
+  for (const fase of plan.fases) {
+    fase.bloques.forEach((bloque, b) => {
+      const isBands = bloque.tipo === "actividad_por_grados";
+      if (!isBands) {
+        if (bloque.variantes_por_grado !== null) {
+          issues.push({ kind: "variantes_unexpected", fase: fase.orden, bloque: b, tipo: bloque.tipo });
+        }
+        return;
+      }
+      if (singleBand) {
+        issues.push({ kind: "variantes_single_grade", fase: fase.orden, bloque: b });
+        return;
+      }
+      if (!bloque.variantes_por_grado) {
+        issues.push({ kind: "variantes_required", fase: fase.orden, bloque: b });
+        return;
+      }
+      const seen = new Map<number, number>();
+      for (const v of bloque.variantes_por_grado) {
+        for (const grado of v.grados) seen.set(grado, (seen.get(grado) ?? 0) + 1);
+      }
+      const missing = [...selected].filter((gr) => !seen.has(gr)).sort((a, c) => a - c);
+      const extra = [...seen.keys()].filter((gr) => !selected.has(gr)).sort((a, c) => a - c);
+      const duplicated = [...seen.entries()]
+        .filter(([, n]) => n > 1)
+        .map(([gr]) => gr)
+        .sort((a, c) => a - c);
+      if (missing.length || extra.length || duplicated.length) {
+        issues.push({ kind: "variantes_not_partition", fase: fase.orden, bloque: b, missing, extra, duplicated });
+      }
+    });
   }
 
   if (issues.length > 0) {

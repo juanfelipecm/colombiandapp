@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { assignTokens, type DbaEntry } from "@/lib/ai/dba-context";
-import { PlanValidationError } from "@/lib/ai/errors";
+import { PlanValidationError, type ValidationIssue } from "@/lib/ai/errors";
 import { validatePlan } from "@/lib/ai/plan-validator";
+import { makeBloque, makePlan } from "../fixtures/clase-viva-plan";
 
 const matLenguaje = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
 const matCn = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
@@ -18,189 +19,236 @@ const dba = (overrides: Partial<DbaEntry>): DbaEntry => ({
   evidencias: overrides.evidencias ?? [{ id: "ev-auto", numero: 1, descripcion: "Evidencia 1" }],
 });
 
-function activityWithTokens(tokens: string[]) {
-  return {
-    tarea: "Una actividad apropiada al grado y a la materia.",
-    evidencia_observable: "Evidencia observable en clase.",
-    dba_tokens: tokens,
-  };
+/** One DBA per (grado × materia), tokens D1..Dn in grado-major order. */
+function ctxFor(grados: number[], materias: string[], extra: Partial<DbaEntry> = {}) {
+  const entries = grados.flatMap((g) => materias.map((m) => dba({ grado: g, materia_id: m, ...extra })));
+  const ctx = assignTokens(entries);
+  const tokens: Record<string, string> = {};
+  for (const d of ctx.dbas) tokens[`${d.grado}:${d.materia_id}`] = d.token;
+  return { ctx, tokens };
 }
 
-function basePlan(grados: number[], materiaIds: string[], tokens: Record<string, Record<string, string[]>>) {
-  const dba_targets = grados.flatMap((g) =>
-    materiaIds.map((m) => ({
-      grado: g,
-      materia_id: m,
-      dbas: [{ dba_token: tokens[String(g)][m][0], evidencia_index: 0 as number | null }],
-    })),
-  );
-
-  const makeActivities = () =>
-    Object.fromEntries(
-      grados.map((g) => [
-        String(g),
-        Object.fromEntries(materiaIds.map((m) => [m, activityWithTokens(tokens[String(g)][m])])),
-      ]),
-    );
-
-  return {
-    titulo: "Proyecto de prueba de la vereda",
-    pregunta_guia: "¿Qué nos enseña la quebrada sobre el agua y la vida?",
-    producto_final: "Un mural colectivo con observaciones de la quebrada.",
-    cierre_actividad: "Presentamos el mural a las familias el viernes.",
-    cierre_evaluacion: "Evaluamos si cada grupo explicó su contribución.",
-    materiales: ["papel", "lápices", "hojas"],
-    dba_targets,
-    fases: [
-      {
-        orden: 1,
-        nombre: "Exploración",
-        dias_label: "Lunes-Martes",
-        descripcion: "Salimos a observar la quebrada y anotamos lo que vemos.",
-        actividades: makeActivities(),
-      },
-      {
-        orden: 2,
-        nombre: "Síntesis",
-        dias_label: "Miércoles-Viernes",
-        descripcion: "Combinamos observaciones en un mural colectivo.",
-        actividades: makeActivities(),
-      },
-    ],
-  };
+function issuesOf(fn: () => unknown): ValidationIssue[] {
+  try {
+    fn();
+  } catch (e) {
+    if (e instanceof PlanValidationError) return e.issues;
+    throw e;
+  }
+  throw new Error("expected PlanValidationError");
 }
 
-describe("validatePlan", () => {
+type Plan = ReturnType<typeof makePlan>;
+const withFase = (plan: Plan, i: number, patch: Record<string, unknown>) => ({
+  ...plan,
+  fases: plan.fases.map((f, j) => (j === i ? { ...f, ...patch } : f)),
+});
+
+describe("validatePlan — DBA targets (unchanged rules)", () => {
   it("passes on a correct plan (1 grade × 1 materia)", () => {
-    const ctx = assignTokens([dba({ grado: 1, materia_id: matLenguaje })]);
-    const plan = basePlan([1], [matLenguaje], { "1": { [matLenguaje]: ["D1"] } });
-    const result = validatePlan(plan, ctx, { grados: [1], materiaIds: [matLenguaje] });
-    expect(result.plan.titulo).toContain("vereda");
+    const { ctx, tokens } = ctxFor([1], [matLenguaje]);
+    const out = validatePlan(makePlan([1], [matLenguaje], tokens), ctx, { grados: [1], materiaIds: [matLenguaje] });
+    expect(out.plan.fases).toHaveLength(5);
   });
 
-  it("passes on 2 grades × 2 materias (full cross-product)", () => {
-    const ctx = assignTokens([
-      dba({ grado: 1, materia_id: matLenguaje }),
-      dba({ grado: 1, materia_id: matCn, materia_slug: "ciencias_naturales", materia_nombre: "Ciencias Naturales" }),
-      dba({ grado: 2, materia_id: matLenguaje }),
-      dba({ grado: 2, materia_id: matCn, materia_slug: "ciencias_naturales", materia_nombre: "Ciencias Naturales" }),
-    ]);
-    const plan = basePlan([1, 2], [matLenguaje, matCn], {
-      "1": { [matLenguaje]: ["D1"], [matCn]: ["D2"] },
-      "2": { [matLenguaje]: ["D3"], [matCn]: ["D4"] },
-    });
-    expect(() => validatePlan(plan, ctx, { grados: [1, 2], materiaIds: [matLenguaje, matCn] })).not.toThrow();
+  it("passes on 3 grades × 2 materias with bands", () => {
+    const g = [0, 2, 5];
+    const { ctx, tokens } = ctxFor(g, [matLenguaje, matCn]);
+    expect(() =>
+      validatePlan(makePlan(g, [matLenguaje, matCn], tokens), ctx, { grados: g, materiaIds: [matLenguaje, matCn] }),
+    ).not.toThrow();
   });
 
   it("rejects unknown token in dba_targets", () => {
-    const ctx = assignTokens([dba({ grado: 1, materia_id: matLenguaje })]);
-    const plan = basePlan([1], [matLenguaje], { "1": { [matLenguaje]: ["D99"] } });
-    expect(() => validatePlan(plan, ctx, { grados: [1], materiaIds: [matLenguaje] })).toThrow(
-      PlanValidationError,
+    const { ctx } = ctxFor([1], [matLenguaje]);
+    const issues = issuesOf(() =>
+      validatePlan(makePlan([1], [matLenguaje], { [`1:${matLenguaje}`]: "D99" }), ctx, {
+        grados: [1],
+        materiaIds: [matLenguaje],
+      }),
     );
+    expect(issues.some((i) => i.kind === "unknown_token")).toBe(true);
+  });
+
+  it("rejects a token from another pair", () => {
+    const { ctx, tokens } = ctxFor([1, 2], [matLenguaje]);
+    const swapped = { [`1:${matLenguaje}`]: tokens[`2:${matLenguaje}`], [`2:${matLenguaje}`]: tokens[`2:${matLenguaje}`] };
+    const issues = issuesOf(() =>
+      validatePlan(makePlan([1, 2], [matLenguaje], swapped), ctx, { grados: [1, 2], materiaIds: [matLenguaje] }),
+    );
+    expect(issues.some((i) => i.kind === "target_token_wrong_pair")).toBe(true);
   });
 
   it("rejects missing (grade × materia) in dba_targets", () => {
-    const ctx = assignTokens([
-      dba({ grado: 1, materia_id: matLenguaje }),
-      dba({ grado: 2, materia_id: matLenguaje }),
-    ]);
-    // User selected 2 grades but plan only includes 1 in dba_targets
-    const plan = {
-      ...basePlan([1, 2], [matLenguaje], {
-        "1": { [matLenguaje]: ["D1"] },
-        "2": { [matLenguaje]: ["D2"] },
-      }),
-      dba_targets: [
-        { grado: 1, materia_id: matLenguaje, dbas: [{ dba_token: "D1", evidencia_index: 0 }] },
-        // grado 2 missing
-      ],
-    };
-    expect(() => validatePlan(plan, ctx, { grados: [1, 2], materiaIds: [matLenguaje] })).toThrow(
-      PlanValidationError,
-    );
+    const { ctx, tokens } = ctxFor([1], [matLenguaje, matCn]);
+    const plan = makePlan([1], [matLenguaje, matCn], tokens);
+    plan.dba_targets = plan.dba_targets.filter((t) => t.materia_id === matLenguaje);
+    const issues = issuesOf(() => validatePlan(plan, ctx, { grados: [1], materiaIds: [matLenguaje, matCn] }));
+    expect(issues).toContainEqual({ kind: "missing_cross_product", grado: 1, materia_id: matCn });
   });
 
-  it("rejects duplicate DBA in same (grade × materia) pair", () => {
-    const ctx = assignTokens([dba({ id: "x1", grado: 1, materia_id: matLenguaje })]);
-    const plan = {
-      ...basePlan([1], [matLenguaje], { "1": { [matLenguaje]: ["D1"] } }),
-      dba_targets: [
-        {
-          grado: 1,
-          materia_id: matLenguaje,
-          dbas: [
-            { dba_token: "D1", evidencia_index: 0 },
-            { dba_token: "D1", evidencia_index: 0 },
-          ],
-        },
-      ],
-    };
-    expect(() => validatePlan(plan, ctx, { grados: [1], materiaIds: [matLenguaje] })).toThrow(
-      PlanValidationError,
-    );
-  });
-
-  it("rejects activity token that isn't in its pair's dba_targets", () => {
-    const ctx = assignTokens([
-      dba({ grado: 1, materia_id: matLenguaje }),
-      dba({ grado: 1, materia_id: matLenguaje }),
-    ]);
-    const plan = basePlan([1], [matLenguaje], { "1": { [matLenguaje]: ["D1"] } });
-    plan.fases[0].actividades["1"][matLenguaje].dba_tokens = ["D2"]; // D2 exists but not in targets
-    expect(() => validatePlan(plan, ctx, { grados: [1], materiaIds: [matLenguaje] })).toThrow(
-      PlanValidationError,
-    );
+  it("rejects duplicate DBA in same pair", () => {
+    const { ctx, tokens } = ctxFor([1], [matLenguaje]);
+    const plan = makePlan([1], [matLenguaje], tokens);
+    plan.dba_targets[0].dbas.push({ ...plan.dba_targets[0].dbas[0] });
+    const issues = issuesOf(() => validatePlan(plan, ctx, { grados: [1], materiaIds: [matLenguaje] }));
+    expect(issues.some((i) => i.kind === "duplicate_dba_target")).toBe(true);
   });
 
   it("accepts null evidencia_index for Inglés DBAs", () => {
-    const ctx = assignTokens([
-      dba({ grado: 3, materia_id: matIngles, materia_slug: "ingles", materia_nombre: "Inglés", evidencias: [] }),
-    ]);
-    const plan = basePlan([3], [matIngles], { "3": { [matIngles]: ["D1"] } });
+    const { ctx, tokens } = ctxFor([3], [matIngles], { materia_slug: "ingles", evidencias: [] });
+    const plan = makePlan([3], [matIngles], tokens);
     plan.dba_targets[0].dbas[0].evidencia_index = null;
     expect(() => validatePlan(plan, ctx, { grados: [3], materiaIds: [matIngles] })).not.toThrow();
   });
 
-  it("rejects null evidencia_index for non-Inglés DBAs that DO have evidencias", () => {
-    const ctx = assignTokens([dba({ grado: 1, materia_id: matLenguaje })]);
-    const plan = basePlan([1], [matLenguaje], { "1": { [matLenguaje]: ["D1"] } });
+  it("rejects null evidencia_index for non-Inglés DBAs that have evidencias", () => {
+    const { ctx, tokens } = ctxFor([1], [matLenguaje]);
+    const plan = makePlan([1], [matLenguaje], tokens);
     plan.dba_targets[0].dbas[0].evidencia_index = null;
-    expect(() => validatePlan(plan, ctx, { grados: [1], materiaIds: [matLenguaje] })).toThrow(
-      PlanValidationError,
-    );
+    const issues = issuesOf(() => validatePlan(plan, ctx, { grados: [1], materiaIds: [matLenguaje] }));
+    expect(issues.some((i) => i.kind === "evidencia_required_for_non_ingles")).toBe(true);
   });
 
   it("rejects out-of-range evidencia_index", () => {
-    const ctx = assignTokens([
-      dba({
-        grado: 1,
-        materia_id: matLenguaje,
-        evidencias: [
-          { id: "ev1", numero: 1, descripcion: "E1" },
-          { id: "ev2", numero: 2, descripcion: "E2" },
-        ],
-      }),
-    ]);
-    const plan = basePlan([1], [matLenguaje], { "1": { [matLenguaje]: ["D1"] } });
-    plan.dba_targets[0].dbas[0].evidencia_index = 5; // only 2 evidencias
-    expect(() => validatePlan(plan, ctx, { grados: [1], materiaIds: [matLenguaje] })).toThrow(
-      PlanValidationError,
-    );
+    const { ctx, tokens } = ctxFor([1], [matLenguaje]);
+    const plan = makePlan([1], [matLenguaje], tokens);
+    plan.dba_targets[0].dbas[0].evidencia_index = 7;
+    const issues = issuesOf(() => validatePlan(plan, ctx, { grados: [1], materiaIds: [matLenguaje] }));
+    expect(issues.some((i) => i.kind === "evidencia_index_out_of_range")).toBe(true);
   });
 
   it("attaches raw output to the error for logging", () => {
-    const ctx = assignTokens([dba({ grado: 1, materia_id: matLenguaje })]);
-    const plan = basePlan([1], [matLenguaje], { "1": { [matLenguaje]: ["D99"] } });
+    const { ctx } = ctxFor([1], [matLenguaje]);
     try {
-      validatePlan(plan, ctx, { grados: [1], materiaIds: [matLenguaje] });
-      expect.fail("should have thrown");
-    } catch (err) {
-      expect(err).toBeInstanceOf(PlanValidationError);
-      if (err instanceof PlanValidationError) {
-        expect(err.rawOutput.length).toBeGreaterThan(0);
-        expect(err.issues.length).toBeGreaterThan(0);
-      }
+      validatePlan({ titulo: "x" }, ctx, { grados: [1], materiaIds: [matLenguaje] });
+      throw new Error("should have thrown");
+    } catch (e) {
+      expect(e).toBeInstanceOf(PlanValidationError);
+      expect((e as PlanValidationError).rawOutput).toContain("titulo");
     }
+  });
+});
+
+describe("validatePlan — Clase Viva structure", () => {
+  it("rejects fases out of etapa order", () => {
+    const { ctx, tokens } = ctxFor([1], [matLenguaje]);
+    const plan = makePlan([1], [matLenguaje], tokens);
+    [plan.fases[0], plan.fases[2]] = [plan.fases[2], plan.fases[0]];
+    const issues = issuesOf(() => validatePlan(plan, ctx, { grados: [1], materiaIds: [matLenguaje] }));
+    expect(issues.filter((i) => i.kind === "etapa_orden_mismatch")).toHaveLength(2);
+  });
+
+  it("rejects right etapa with wrong orden", () => {
+    const { ctx, tokens } = ctxFor([1], [matLenguaje]);
+    const plan = withFase(makePlan([1], [matLenguaje], tokens), 3, { orden: 5 });
+    const issues = issuesOf(() => validatePlan(plan, ctx, { grados: [1], materiaIds: [matLenguaje] }));
+    expect(issues).toContainEqual(
+      expect.objectContaining({ kind: "etapa_orden_mismatch", index: 3, got_orden: 5 }),
+    );
+  });
+
+  it("rejects actividad_por_grados without variantes", () => {
+    const g = [1, 3];
+    const { ctx, tokens } = ctxFor(g, [matLenguaje]);
+    const b = makeBloque({ tipo: "actividad_por_grados", variantes_por_grado: null });
+    const plan = withFase(makePlan(g, [matLenguaje], tokens), 1, { bloques: [makeBloque(), b] });
+    const issues = issuesOf(() => validatePlan(plan, ctx, { grados: g, materiaIds: [matLenguaje] }));
+    expect(issues).toContainEqual({ kind: "variantes_required", fase: 2, bloque: 1 });
+  });
+
+  it("rejects variantes on a non-band bloque", () => {
+    const g = [1, 3];
+    const { ctx, tokens } = ctxFor(g, [matLenguaje]);
+    const b = makeBloque({
+      variantes_por_grado: [
+        { grados: [1], contenido: "Dibujan lo que observan en el patio." },
+        { grados: [3], contenido: "Escriben lo que observan en el patio." },
+      ],
+    });
+    const plan = withFase(makePlan(g, [matLenguaje], tokens), 0, { bloques: [makeBloque(), b] });
+    const issues = issuesOf(() => validatePlan(plan, ctx, { grados: g, materiaIds: [matLenguaje] }));
+    expect(issues).toContainEqual({ kind: "variantes_unexpected", fase: 1, bloque: 1, tipo: "actividad" });
+  });
+
+  it("rejects variants that miss a grade or repeat one", () => {
+    const g = [0, 1, 2, 3];
+    const { ctx, tokens } = ctxFor(g, [matLenguaje]);
+    const b = makeBloque({
+      tipo: "actividad_por_grados",
+      variantes_por_grado: [
+        { grados: [0, 1], contenido: "Dibujan lo que observan en el patio." },
+        { grados: [1, 2], contenido: "Escriben lo que observan en el patio." },
+      ],
+    });
+    const plan = withFase(makePlan(g, [matLenguaje], tokens), 1, { bloques: [makeBloque(), b] });
+    const issues = issuesOf(() => validatePlan(plan, ctx, { grados: g, materiaIds: [matLenguaje] }));
+    expect(issues).toContainEqual({
+      kind: "variantes_not_partition",
+      fase: 2,
+      bloque: 1,
+      missing: [3],
+      extra: [],
+      duplicated: [1],
+    });
+  });
+
+  it("accepts a non-canonical but valid partition", () => {
+    const g = [4, 5];
+    const { ctx, tokens } = ctxFor(g, [matLenguaje]);
+    const b = makeBloque({
+      tipo: "actividad_por_grados",
+      variantes_por_grado: [
+        { grados: [4], contenido: "Investigan en parejas y registran." },
+        { grados: [5], contenido: "Comparan fuentes y reconstruyen." },
+      ],
+    });
+    // [4,5] is a single canonical band, so bands are not allowed here:
+    const plan = withFase(makePlan(g, [matLenguaje], tokens), 1, { bloques: [makeBloque(), b] });
+    const issues = issuesOf(() => validatePlan(plan, ctx, { grados: g, materiaIds: [matLenguaje] }));
+    expect(issues).toContainEqual({ kind: "variantes_single_grade", fase: 2, bloque: 1 });
+
+    // ...but [3,4] spans two bands and the split [3]/[4] is a valid partition.
+    const g2 = [3, 4];
+    const c2 = ctxFor(g2, [matLenguaje]);
+    const b2 = makeBloque({
+      tipo: "actividad_por_grados",
+      variantes_por_grado: [
+        { grados: [3], contenido: "Investigan en parejas y registran." },
+        { grados: [4], contenido: "Comparan fuentes y reconstruyen." },
+      ],
+    });
+    const plan2 = withFase(makePlan(g2, [matLenguaje], c2.tokens), 1, { bloques: [makeBloque(), b2] });
+    expect(() => validatePlan(plan2, c2.ctx, { grados: g2, materiaIds: [matLenguaje] })).not.toThrow();
+  });
+
+  it("rejects actividad_por_grados for a single-band selection", () => {
+    const g = [3];
+    const { ctx, tokens } = ctxFor(g, [matLenguaje]);
+    const b = makeBloque({
+      tipo: "actividad_por_grados",
+      variantes_por_grado: [
+        { grados: [3], contenido: "Investigan en parejas y registran." },
+        { grados: [3], contenido: "Comparan fuentes y reconstruyen." },
+      ],
+    });
+    const plan = withFase(makePlan(g, [matLenguaje], tokens), 1, { bloques: [makeBloque(), b] });
+    const issues = issuesOf(() => validatePlan(plan, ctx, { grados: g, materiaIds: [matLenguaje] }));
+    expect(issues).toContainEqual({ kind: "variantes_single_grade", fase: 2, bloque: 1 });
+  });
+
+  it("a variant grade outside the selection is a zod_parse issue", () => {
+    const g = [1, 3];
+    const { ctx, tokens } = ctxFor(g, [matLenguaje]);
+    const b = makeBloque({
+      tipo: "actividad_por_grados",
+      variantes_por_grado: [
+        { grados: [1], contenido: "Dibujan lo que observan en el patio." },
+        { grados: [5], contenido: "Escriben lo que observan en el patio." },
+      ],
+    });
+    const plan = withFase(makePlan(g, [matLenguaje], tokens), 1, { bloques: [makeBloque(), b] });
+    const issues = issuesOf(() => validatePlan(plan, ctx, { grados: g, materiaIds: [matLenguaje] }));
+    expect(issues.every((i) => i.kind === "zod_parse")).toBe(true);
   });
 });
